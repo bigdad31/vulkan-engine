@@ -26,7 +26,6 @@ set(COMPILED_KERNELS
 
 add_executable (engine 
 	"engine.cpp"
-	"engine.h"
 	"vulkancontext.h"
 	"vulkancontext.cpp"
 	"swapchain.h"
@@ -36,7 +35,7 @@ add_executable (engine
 	"shader.h"
 	"shader.cpp"
 	${KERNELS}
-	${COMPILED_KERNELS} "DrawCommand.h" "DrawCommand.cpp" "renderer.h" "renderer.cpp" "model.h" "model.cpp"   "transferhandler.h" "transferhandler.cpp")
+	${COMPILED_KERNELS} "drawcommand.h" "drawcommand.cpp" "renderer.h" "renderer.cpp" "model.h" "model.cpp" "transferhandler.h" "transferhandler.cpp")
 
 foreach(KERNEL ${KERNELS})
 	add_custom_command(OUTPUT ${KERNEL}.spv

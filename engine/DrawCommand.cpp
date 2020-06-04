@@ -42,14 +42,17 @@ void DrawCommand::recordCommandBuffer(const Pipeline& pipeline, const std::vecto
 {
 	const vk::CommandBuffer& commandBuffer = _commandBuffers[ind];
 	auto clearColor = vk::ClearValue().setColor(vk::ClearColorValue().setFloat32({ 0, 0, 0, 1.0 }));
+	auto clearDepth = vk::ClearValue().setColor(vk::ClearColorValue().setFloat32({1.0, 0, 0, 0}));
+
+	vk::ClearValue clearValues[] = { clearColor, clearDepth };
 
 	auto renderArea = vk::Rect2D();
 
 	auto beginInfo = vk::CommandBufferBeginInfo();
 
 	auto renderPassBeginInfo = vk::RenderPassBeginInfo()
-		.setClearValueCount(1)
-		.setPClearValues(&clearColor)
+		.setClearValueCount(2)
+		.setPClearValues(clearValues)
 		.setFramebuffer(pipeline.getFramebuffers()[ind])
 		.setRenderArea(pipeline.getScissors())
 		.setRenderPass(pipeline.getRenderPass());

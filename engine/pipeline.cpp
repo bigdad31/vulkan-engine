@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "model.h"
 
-Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain)
+Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView)
 {
 	Shader vertShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.vert.spv");
 	Shader fragShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.frag.spv");
@@ -58,6 +58,14 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setAlphaToCoverageEnable(false)
 		.setAlphaToOneEnable(false);
 
+	auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+		.setDepthCompareOp(vk::CompareOp::eLess)
+		.setDepthTestEnable(true)
+		.setDepthWriteEnable(true)
+		.setMinDepthBounds(0.0f)
+		.setMaxDepthBounds(1.0f)
+		.setStencilTestEnable(false);
+
 	auto colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
 		.setBlendEnable(false)
 		.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
@@ -78,13 +86,28 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setInitialLayout(vk::ImageLayout::eUndefined)
 		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
+	auto depthAttachment = vk::AttachmentDescription()
+		.setFormat(vk::Format::eD32Sfloat)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+
 	auto colorAttachmentRef = vk::AttachmentReference()
 		.setAttachment(0)
 		.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
+	auto depthAttachmentRef = vk::AttachmentReference()
+		.setAttachment(1)
+		.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
 	auto subpass = vk::SubpassDescription()
 		.setColorAttachmentCount(1)
-		.setPColorAttachments(&colorAttachmentRef);
+		.setPColorAttachments(&colorAttachmentRef)
+		.setPDepthStencilAttachment(&depthAttachmentRef);
 
 	auto subpassDependencies = vk::SubpassDependency()
 		.setSrcSubpass(VK_SUBPASS_EXTERNAL)
@@ -92,10 +115,10 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 		.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 		.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-
+	vk::AttachmentDescription attachments[] = {colorAttachment, depthAttachment};
 	auto renderPassInfo = vk::RenderPassCreateInfo()
-		.setAttachmentCount(1)
-		.setPAttachments(&colorAttachment)
+		.setAttachmentCount(2)
+		.setPAttachments(attachments)
 		.setSubpassCount(1)
 		.setPSubpasses(&subpass)
 		.setDependencyCount(1)
@@ -111,6 +134,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setPViewportState(&viewportState)
 		.setPMultisampleState(&multiSampling)
 		.setPRasterizationState(&rasterizer)
+		.setPDepthStencilState(&depthStencilState)
 		.setLayout(pipelineLayout)
 		.setRenderPass(renderPass)
 		.setSubpass(0);
@@ -119,9 +143,10 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 	std::vector<vk::Framebuffer> framebuffers (swapchain.getImageViews().size());
 
 	std::transform(swapchain.getImageViews().begin(), swapchain.getImageViews().end(), framebuffers.begin(), [&](const vk::ImageView &imageView) {
+		vk::ImageView attachments[] = { imageView, depthView };
 		auto frameBufferInfo = vk::FramebufferCreateInfo()
-			.setAttachmentCount(1)
-			.setPAttachments(&imageView)
+			.setAttachmentCount(2)
+			.setPAttachments(attachments)
 			.setRenderPass(renderPass)
 			.setWidth(swapchain.getWidth())
 			.setHeight(swapchain.getHeight())
@@ -142,8 +167,8 @@ Pipeline::Pipeline(const VulkanContext& vkCtx, vk::Rect2D scissors, vk::Pipeline
 {
 }
 
-Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain)
-	: Pipeline(createPipeline(vkCtx, swapchain))
+Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView)
+	: Pipeline(createPipeline(vkCtx, swapchain, depthView))
 {
 }
 

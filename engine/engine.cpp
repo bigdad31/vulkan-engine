@@ -1,8 +1,4 @@
-﻿// vulkan.cpp : Defines the entry point for the application.
-//
-#define WIN32_LEAN_AND_MEAN
-#include "engine.h"
-
+﻿#define WIN32_LEAN_AND_MEAN
 #include <vulkan/vulkan.hpp>
 
 #include <SDL2/SDL_video.h>
@@ -13,7 +9,7 @@
 #include <optional>
 #include <vector>
 #include "model.h"
-#include "TransferHandler.h"
+#include "transferhandler.h"
 
 #include "renderer.h"
 #include <chrono>
