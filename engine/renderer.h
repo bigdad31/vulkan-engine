@@ -12,10 +12,12 @@ class Renderer
 	Swapchain _swapchain;
 	Pipeline _pipeline;
 	DrawCommand _drawCommand;
+	TransferHandler _transferHandler;
 
 	std::vector<vk::UniqueHandle<vk::Semaphore, vk::DispatchLoaderStatic>> _imageAvailableSemaphores;
 	std::vector<vk::UniqueHandle<vk::Semaphore, vk::DispatchLoaderStatic>> _renderFinishedSemaphores;
 	std::vector<vk::UniqueHandle<vk::Fence, vk::DispatchLoaderStatic>> _inFlightFences;
+	std::vector<BakedModel> _bakedModels;
 	size_t _frame = 0;
 
 public:
@@ -24,7 +26,8 @@ public:
 		_surface(vkCtx.createSurfaceFromWindow(window)),
 		_swapchain(vkCtx, _surface, 800, 600),
 		_pipeline(vkCtx, _swapchain),
-		_drawCommand(vkCtx, _swapchain.getImageViews().size())
+		_drawCommand(vkCtx, _swapchain.getImageViews().size()),
+		_transferHandler(vkCtx)
 	{
 		vk::SemaphoreCreateInfo semaphoreInfo;
 		auto fenceInfo = vk::FenceCreateInfo()
@@ -39,7 +42,28 @@ public:
 			_renderFinishedSemaphores[i] = vkCtx.getDevice().createSemaphoreUnique(semaphoreInfo);
 			_inFlightFences[i] = vkCtx.getDevice().createFenceUnique(fenceInfo);
 		}
-		_drawCommand.recordCommandBuffer(_pipeline);
+
+		const std::vector<Vertex> vertices = {
+			{{0.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+			{{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+		};
+
+		const std::vector<uint16_t> indices = { 0, 1, 2 };
+
+		const std::vector<Vertex> vertices2 = {
+			{{0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+			{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+		};
+		Model model;
+		model.vertices = vertices;
+		model.indices = indices;
+		std::vector<Model> models = { model, {vertices2, indices} };
+		_bakedModels.resize(models.size());
+		submitModelBake(vkCtx, _transferHandler, models, std::span<BakedModel>(_bakedModels.data(), _bakedModels.size()));
+
+		_drawCommand.recordCommandBuffer(_pipeline, _bakedModels);
 	}
 
 	Renderer(const Renderer&) = delete;

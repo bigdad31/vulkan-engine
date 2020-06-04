@@ -7,9 +7,9 @@ void Renderer::drawFrame()
 
 
 	_vkCtx.getDevice().resetFences({ _inFlightFences[_frame].get() });
-	vk::Queue queue = _vkCtx.getDevice().getQueue(_vkCtx.getQueueFamilies().graphicsInd.value(), 0);
+	vk::Queue queue = _vkCtx.getGraphicsQueue(0);
 	uint32_t imageIndex = _swapchain.acquireNextImage(_imageAvailableSemaphores[_frame].get());
-	_drawCommand.recordCommandBuffer(_pipeline, imageIndex);
+	_drawCommand.recordCommandBuffer(_pipeline, _bakedModels, imageIndex);
 	vk::Semaphore waitSemaphores[] = { _imageAvailableSemaphores[_frame].get() };
 	vk::Semaphore signalSemaphores[] = { _renderFinishedSemaphores[_frame].get() };
 	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
@@ -41,5 +41,8 @@ void Renderer::drawFrame()
 
 Renderer::~Renderer()
 {
+	for (auto &bakedModel : _bakedModels) {
+		bakedModel.destroy(_vkCtx);
+	}
 	_vkCtx.destroy(_surface);
 }

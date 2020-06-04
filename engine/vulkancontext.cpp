@@ -1,3 +1,4 @@
+#define VMA_IMPLEMENTATION
 #include "VulkanContext.h"
 #include <SDL2/SDL_vulkan.h>
 #include <iostream>
@@ -96,8 +97,8 @@ vk::Device createDevice(vk::PhysicalDevice& physicalDevice,
 	return physicalDevice.createDevice(deviceInfo);
 }
 
-vk::Instance createInstance(const std::vector<const char *> &extensionNames) {
-	vk::ApplicationInfo appInfo("Test App", 1, "Test Engine", 1, VK_API_VERSION_1_2);
+vk::Instance createInstance(const std::vector<const char*>& extensionNames) {
+	vk::ApplicationInfo appInfo("Test App", 1, "Test Engine", 1, VK_API_VERSION_1_1);
 
 	std::vector<const char*> layerNames;
 	if (debug) {
@@ -151,11 +152,9 @@ VulkanContext VulkanContext::createContext(SDL_Window* window)
 	return createContext(extensionNames);
 }
 
-VulkanContext VulkanContext::createContext(const std::vector<const char*> &extensionNames)
+VulkanContext VulkanContext::createContext(const std::vector<const char*>& extensionNames)
 {
-	size_t nComputeQueues = 1;
-	size_t nTransferQueues = 1;
-	size_t nGraphicsQueues = 1;
+	size_t nComputeQueues = 1, nTransferQueues = 1, nGraphicsQueues = 1;
 	vk::Instance instance = createInstance(extensionNames);
 	vk::DebugUtilsMessengerEXT debugUtils;
 	if (debug) {
@@ -166,7 +165,29 @@ VulkanContext VulkanContext::createContext(const std::vector<const char*> &exten
 
 	vk::Device device = createDevice(physicalDevice, queueFamilies, nComputeQueues, nTransferQueues, nGraphicsQueues);
 
-	return VulkanContext(instance, physicalDevice, device, queueFamilies, debugUtils, nComputeQueues, nTransferQueues, nGraphicsQueues);
+	std::vector<vk::Queue> computeQueues(nComputeQueues);
+	for (int i = 0; i < computeQueues.size(); i++) {
+		computeQueues[i] = device.getQueue(queueFamilies.computeInd.value(), i);
+	}
+
+	std::vector<vk::Queue> transferQueues(nTransferQueues);
+	for (int i = 0; i < transferQueues.size(); i++) {
+		transferQueues[i] = device.getQueue(queueFamilies.transferInd.value(), i);
+	}
+
+	std::vector<vk::Queue> graphicsQueues(nGraphicsQueues);
+	for (int i = 0; i < graphicsQueues.size(); i++) {
+		graphicsQueues[i] = device.getQueue(queueFamilies.graphicsInd.value(), i);
+	}
+
+	VmaAllocatorCreateInfo allocatorCreateInfo{};
+	allocatorCreateInfo.device = device;
+	allocatorCreateInfo.instance = instance;
+	allocatorCreateInfo.physicalDevice = physicalDevice;
+	VmaAllocator allocator;
+	vmaCreateAllocator(&allocatorCreateInfo, &allocator);
+
+	return VulkanContext(instance, physicalDevice, device, allocator, queueFamilies, debugUtils, computeQueues, transferQueues, graphicsQueues);
 }
 
 VulkanContext::VulkanContext(SDL_Window* window) : VulkanContext(createContext(window))
@@ -174,26 +195,33 @@ VulkanContext::VulkanContext(SDL_Window* window) : VulkanContext(createContext(w
 }
 
 VulkanContext::VulkanContext(const vk::Instance instance,
+
 	vk::PhysicalDevice physicalDevice,
-	vk::Device device,
+
+	vk::Device device, VmaAllocator allocator,
+
 	QueueFamilies queueFamilies,
+
 	vk::DebugUtilsMessengerEXT debugUtils,
-	size_t nComputeQueues,
-	size_t nTransferQueues,
-	size_t nGraphicsQueues)
+
+	std::vector<vk::Queue> computeQueues,
+	std::vector<vk::Queue> transferQueues,
+	std::vector<vk::Queue> graphicsQueues)
 	: _instance(instance),
 	_physicalDevice(physicalDevice),
 	_device(device),
+	_allocator(allocator),
 	_queueFamilies(queueFamilies),
 	_debugUtils(debugUtils),
-	_nComputeQueues(nComputeQueues),
-	_nTransferQueues(nTransferQueues),
-	_nGraphicsQueues(nGraphicsQueues)
+	_computeQueues(computeQueues),
+	_transferQueues(transferQueues),
+	_graphicsQueues(graphicsQueues)
 {
 }
 
 VulkanContext::~VulkanContext()
 {
+	vmaDestroyAllocator(_allocator);
 	_device.destroy();
 	if (debug) destroyDebugUtils(_instance, _debugUtils);
 	_instance.destroy();

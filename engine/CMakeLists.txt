@@ -3,8 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.10)
 
-add_compile_options("/std:c++latest")
-add_compile_options("/Zc:__cplusplus")
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(Vulkan)
 find_package(SDL2 REQUIRED)
@@ -16,13 +15,13 @@ include_directories(engine ${ASSIMP_INCLUDE_DIR})
 include_directories(engine ${Vulkan_INCLUDE_DIRS})
 
 set(KERNELS
-	${CMAKE_CURRENT_SOURCE_DIR}/frag.frag
-	${CMAKE_CURRENT_SOURCE_DIR}/vert.vert
+	shaders/default.frag
+	shaders/default.vert
 )
 
 set(COMPILED_KERNELS
-	${CMAKE_CURRENT_SOURCE_DIR}/frag.frag.spv
-	${CMAKE_CURRENT_SOURCE_DIR}/vert.vert.spv
+	shaders/default.frag.spv
+	shaders/default.vert.spv
 )
 
 add_executable (engine 
@@ -37,14 +36,13 @@ add_executable (engine
 	"shader.h"
 	"shader.cpp"
 	${KERNELS}
-	${COMPILED_KERNELS} "DrawCommand.h" "DrawCommand.cpp" "renderer.h" "renderer.cpp")
+	${COMPILED_KERNELS} "DrawCommand.h" "DrawCommand.cpp" "renderer.h" "renderer.cpp" "model.h" "model.cpp"   "transferhandler.h" "transferhandler.cpp")
 
 foreach(KERNEL ${KERNELS})
 	add_custom_command(OUTPUT ${KERNEL}.spv
-	COMMAND C:/VulkanSDK/1.2.135.0/Bin/glslc ${KERNEL} -g -o ${KERNEL}.spv
+	COMMAND C:/VulkanSDK/1.2.135.0/Bin/glslc ${CMAKE_CURRENT_SOURCE_DIR}/${KERNEL} -g -o "${CMAKE_CURRENT_BINARY_DIR}/${KERNEL}.spv"
 	DEPENDS ${KERNEL}
 	COMMENT "Rebuilding ${KERNEL}.spv" )
-	FILE(COPY ${KERNEL}.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 	message(STATUS "Generating build commands for ${KERNEL}.spv")
 endforeach()
 

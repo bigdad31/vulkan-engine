@@ -31,14 +31,14 @@ DrawCommand::~DrawCommand()
 	_vkCtx.deviceDestroy(_commandPool);
 }
 
-void DrawCommand::recordCommandBuffer(const Pipeline& pipeline) const
+void DrawCommand::recordCommandBuffer(const Pipeline& pipeline, const std::vector<BakedModel>& models) const
 {
 	for (int i = 0; i < _commandBuffers.size(); i++) {
-		recordCommandBuffer(pipeline, i);
+		recordCommandBuffer(pipeline, models, i);
 	}
 }
 
-void DrawCommand::recordCommandBuffer(const Pipeline& pipeline, int ind) const
+void DrawCommand::recordCommandBuffer(const Pipeline& pipeline, const std::vector<BakedModel>& models, int ind) const
 {
 	const vk::CommandBuffer& commandBuffer = _commandBuffers[ind];
 	auto clearColor = vk::ClearValue().setColor(vk::ClearColorValue().setFloat32({ 0, 0, 0, 1.0 }));
@@ -57,7 +57,14 @@ void DrawCommand::recordCommandBuffer(const Pipeline& pipeline, int ind) const
 	commandBuffer.begin(beginInfo);
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.getPipeline());
-	commandBuffer.draw(3, 1, 0, 0);
+
+	for (const auto& model : models) {
+		vk::DeviceSize offset{};
+		commandBuffer.bindVertexBuffers(0, 1, &model.vertexData, &offset);
+		commandBuffer.bindIndexBuffer(model.indexData, 0, vk::IndexType::eUint16);
+		commandBuffer.drawIndexed(model.nIndices, 1, 0, 0, 0);
+	}
+
 	commandBuffer.endRenderPass();
 	commandBuffer.end();
 }

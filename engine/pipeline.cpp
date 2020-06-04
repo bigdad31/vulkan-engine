@@ -1,11 +1,12 @@
 #include "pipeline.h"
 
 #include <algorithm>
+#include "model.h"
 
 Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain)
 {
-	Shader vertShader = Shader::loadShaderFromFile(vkCtx, "vert.vert.spv");
-	Shader fragShader = Shader::loadShaderFromFile(vkCtx, "frag.frag.spv");
+	Shader vertShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.vert.spv");
+	Shader fragShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.frag.spv");
 
 	auto vertStageInfo = vk::PipelineShaderStageCreateInfo()
 		.setModule(vertShader.getShader())
@@ -19,11 +20,14 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 
 	vk::PipelineShaderStageCreateInfo shaderStages[] = { vertStageInfo, fragStageInfo };
 
+	auto vertexInputBinding = Vertex::getVertexDescription();
+	auto vertexInputAttributes = Vertex::getAttributeDescriptions();
+
 	auto vertexState = vk::PipelineVertexInputStateCreateInfo()
-		.setVertexAttributeDescriptionCount(0)
-		.setPVertexAttributeDescriptions(nullptr)
-		.setVertexBindingDescriptionCount(0)
-		.setPVertexBindingDescriptions(nullptr);
+		.setVertexAttributeDescriptionCount(vertexInputAttributes.size())
+		.setPVertexAttributeDescriptions(vertexInputAttributes.data())
+		.setVertexBindingDescriptionCount(1)
+		.setPVertexBindingDescriptions(&vertexInputBinding);
 	
 	auto vertexAssembly = vk::PipelineInputAssemblyStateCreateInfo()
 		.setPrimitiveRestartEnable(false)
