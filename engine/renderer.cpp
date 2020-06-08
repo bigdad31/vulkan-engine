@@ -21,7 +21,7 @@ void Renderer::drawFrame()
 		glm::lookAt(glm::vec3{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f})
 	};
 
-	memcpy(_uniform.getSceneDatas()[imageIndex], &scene, sizeof(SceneUniform));
+	memcpy(_uniform.getSceneUniforms()[imageIndex].data, &scene, sizeof(SceneUniform));
 	//vmaFlushAllocation(_vkCtx.getAllocator(), _uniform.getModelAllocations()[imageIndex], 0, VK_WHOLE_SIZE);
 	auto renderArea = vk::Rect2D();
 
@@ -37,12 +37,12 @@ void Renderer::drawFrame()
 	commandBuffer.begin(beginInfo);
 		commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline.getPipeline());
-			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 0, { _uniform.getSceneDescriptors()[imageIndex] }, { });
+			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 0, { _uniform.getSceneUniforms()[imageIndex].descriptor }, { });
 			for (const auto& model : _bakedModels) {
 				vk::DeviceSize offset{};
-				commandBuffer.bindVertexBuffers(0, 1, &model.vertexData, &offset);
-				commandBuffer.bindIndexBuffer(model.indexData, 0, vk::IndexType::eUint16);
-				commandBuffer.drawIndexed(model.nIndices, 1, 0, 0, 0);
+				commandBuffer.bindVertexBuffers(0, 1, &model.vertices.data, &offset);
+				commandBuffer.bindIndexBuffer(model.indices.data, 0, vk::IndexType::eUint16);
+				commandBuffer.drawIndexed(model.indices.size, 1, 0, 0, 0);
 			}
 		commandBuffer.endRenderPass();
 	commandBuffer.end();

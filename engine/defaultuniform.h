@@ -2,45 +2,23 @@
 #include "vulkancontext.h"
 #include "glm/glm.hpp"
 
-
-class DefaultUniform
-{
-	const VulkanContext& _vkCtx;
-	vk::DescriptorSetLayout _sceneLayout;
-	vk::DescriptorSetLayout _modelLayout;
-
-	std::vector<vk::Buffer> _sceneBuffers;
-	std::vector<VmaAllocation> _sceneAllocations;
-
-	std::vector<vk::Buffer> _modelBuffers;
-	std::vector<VmaAllocation> _modelAllocations;
-
-	std::vector<vk::DescriptorSet> _sceneDescriptors;
-	std::vector<vk::DescriptorSet> _modelDescriptors;
-
-	std::vector<void*> _sceneDatas;
-	std::vector<void*> _modelDatas;
-
-	vk::DescriptorPool _descriptorPool;
-public:
-	DefaultUniform(const VulkanContext& vkCtx, int count);
-	std::vector<vk::Buffer>& getSceneBuffers();
-	std::vector<vk::Buffer>& getModelBuffers();
-
-	std::vector<void*>& getSceneDatas();
-	std::vector<void*>& getModelDatas();
-
-	std::vector<vk::DescriptorSet>& getSceneDescriptors();
-	std::vector<vk::DescriptorSet>& getModelDescriptors();
-
-	vk::DescriptorSetLayout getSceneLayout();
-	vk::DescriptorSetLayout getModelLayout();
-
-	std::vector<VmaAllocation>& getSceneAllocations();
-	std::vector<VmaAllocation>& getModelAllocations();
-	~DefaultUniform();
+template<class T>
+struct Uniform {
+	Buffer<T> buffer;
+	vk::DescriptorSet descriptor;
+	void* data;
+	Uniform() = default;
+	Uniform(const VulkanContext &vkCtx, size_t size, vk::DescriptorPool pool, vk::DescriptorSetLayout layout) : 
+			buffer(vkCtx, size, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU) {
+		auto sceneDescriptorAllocInfo = vk::DescriptorSetAllocateInfo()
+			.setDescriptorPool(pool)
+			.setDescriptorSetCount(1)
+			.setPSetLayouts(&layout);
+		
+		vkCtx.getDevice().allocateDescriptorSets(&sceneDescriptorAllocInfo, &descriptor);
+		vmaMapMemory(vkCtx.getAllocator(), buffer.allocation, &data);
+	}
 };
-
 
 struct SceneUniform {
 	glm::mat4 view;
@@ -50,3 +28,26 @@ struct SceneUniform {
 struct ModelUniform {
 	glm::mat4 trans;
 };
+
+class DefaultUniformLayout
+{
+	const VulkanContext& _vkCtx;
+	vk::DescriptorSetLayout _sceneLayout;
+	vk::DescriptorSetLayout _modelLayout;
+
+	std::vector<Uniform<SceneUniform>> _sceneUniforms;
+	std::vector<Uniform<ModelUniform>> _modelUniforms;
+
+	vk::DescriptorPool _descriptorPool;
+public:
+	DefaultUniformLayout(const VulkanContext& vkCtx, int count);
+
+	vk::DescriptorSetLayout getSceneLayout();
+	vk::DescriptorSetLayout getModelLayout();
+
+	std::vector<Uniform<SceneUniform>>& getSceneUniforms();
+	std::vector<Uniform<ModelUniform>>& getModelUniforms();
+	~DefaultUniformLayout();
+};
+
+

@@ -4,7 +4,7 @@
 #include "model.h"
 #include "depthstencil.h"
 
-Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniform &uniform)
+Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout &uniform)
 {
 	Shader vertShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.vert.spv");
 	Shader fragShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.frag.spv");
@@ -164,7 +164,7 @@ Pipeline::Pipeline(const VulkanContext& vkCtx, vk::Rect2D scissors, vk::Pipeline
 {
 }
 
-Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniform &uniform)
+Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout &uniform)
 	: Pipeline(createPipeline(vkCtx, swapchain, depthView, uniform))
 {
 }

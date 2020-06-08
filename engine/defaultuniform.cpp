@@ -1,6 +1,6 @@
 #include "defaultuniform.h"
 
-DefaultUniform::DefaultUniform(const VulkanContext& vkCtx, int count) : _vkCtx(vkCtx)
+DefaultUniformLayout::DefaultUniformLayout(const VulkanContext& vkCtx, int count) : _vkCtx(vkCtx)
 {
 	auto sceneLayoutBinding = vk::DescriptorSetLayoutBinding()
 		.setBinding(0)
@@ -13,8 +13,6 @@ DefaultUniform::DefaultUniform(const VulkanContext& vkCtx, int count) : _vkCtx(v
 		.setPBindings(&sceneLayoutBinding);
 
 	_sceneLayout = _vkCtx.getDevice().createDescriptorSetLayout(sceneLayoutCreateInfo);
-
-
 	auto modelLayoutBinding = vk::DescriptorSetLayoutBinding()
 		.setBinding(0)
 		.setDescriptorCount(1)
@@ -39,45 +37,18 @@ DefaultUniform::DefaultUniform(const VulkanContext& vkCtx, int count) : _vkCtx(v
 		.setPoolSizeCount(1);
 
 	_descriptorPool = vkCtx.getDevice().createDescriptorPool(descriptorPoolInfo);
-
-	std::vector<vk::DescriptorSetLayout> sceneLayouts(count, _sceneLayout);
-	auto sceneDescriptorAllocInfo = vk::DescriptorSetAllocateInfo()
-		.setDescriptorPool(_descriptorPool)
-		.setDescriptorSetCount(sceneLayouts.size())
-		.setPSetLayouts(sceneLayouts.data());
-
-	_sceneDescriptors = vkCtx.getDevice().allocateDescriptorSets(sceneDescriptorAllocInfo);
-
-	std::vector<vk::DescriptorSetLayout> modelLayouts(count, _modelLayout);
-	auto modelDescriptorAllocInfo = vk::DescriptorSetAllocateInfo()
-		.setDescriptorPool(_descriptorPool)
-		.setDescriptorSetCount(modelLayouts.size())
-		.setPSetLayouts(modelLayouts.data());
-
-	_modelDescriptors = vkCtx.getDevice().allocateDescriptorSets(modelDescriptorAllocInfo);
-	_modelBuffers.resize(count);
-	_sceneBuffers.resize(count);
-	_modelAllocations.resize(count);
-	_sceneAllocations.resize(count);
-	_modelDatas.resize(count);
-	_sceneDatas.resize(count);
+	_sceneUniforms.resize(count);
+	_modelUniforms.resize(count);
 
 	for (int i = 0; i < count; i++) {
-		auto modelBufferInfo = vk::BufferCreateInfo()
-			.setSharingMode(vk::SharingMode::eExclusive)
-			.setSize(65536)
-			.setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
-		_modelBuffers[i] = _vkCtx.getDevice().createBuffer(modelBufferInfo);
+		auto& modelUniform = _modelUniforms[i];
+		auto& sceneUniform = _sceneUniforms[i];
 
-		VmaAllocationCreateInfo	modelAllocInfo{};
-		modelAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		vmaAllocateMemoryForBuffer(_vkCtx.getAllocator(), _modelBuffers[i], &modelAllocInfo, _modelAllocations.data() + i, nullptr);
-		vmaBindBufferMemory(_vkCtx.getAllocator(), _modelAllocations[i], _modelBuffers[i]);
-		vmaMapMemory(_vkCtx.getAllocator(), _modelAllocations[i], &_modelDatas[i]);
+		modelUniform = Uniform<ModelUniform>(vkCtx, 128, _descriptorPool, _modelLayout);
+		sceneUniform = Uniform<SceneUniform>(vkCtx, 128, _descriptorPool, _sceneLayout);
 
 		auto modelDescBufferInfo = vk::DescriptorBufferInfo()
-			.setBuffer(_modelBuffers[i])
+			.setBuffer(modelUniform.buffer.data)
 			.setOffset(0)
 			.setRange(vk::DeviceSize(sizeof(ModelUniform)));
 
@@ -86,26 +57,11 @@ DefaultUniform::DefaultUniform(const VulkanContext& vkCtx, int count) : _vkCtx(v
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDstBinding(0)
 			.setDstArrayElement(0)
-			.setDstSet(_modelDescriptors[i])
+			.setDstSet(modelUniform.descriptor)
 			.setPBufferInfo(&modelDescBufferInfo);
 
-		auto sceneBufferInfo = vk::BufferCreateInfo()
-			.setSharingMode(vk::SharingMode::eExclusive)
-			.setSize(sizeof(SceneUniform))
-			.setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
-		_sceneBuffers[i] = _vkCtx.getDevice().createBuffer(sceneBufferInfo);
-
-		VmaAllocationCreateInfo	sceneAllocInfo{};
-		sceneAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		VmaAllocationInfo info;
-		vmaAllocateMemoryForBuffer(_vkCtx.getAllocator(), _sceneBuffers[i], &modelAllocInfo, _sceneAllocations.data() + i, &info);
-		vmaBindBufferMemory(_vkCtx.getAllocator(), _sceneAllocations[i], _sceneBuffers[i]);
-		vmaMapMemory(_vkCtx.getAllocator(), _sceneAllocations[i], &_sceneDatas[i]);
-
-
 		auto sceneDescBufferInfo = vk::DescriptorBufferInfo()
-			.setBuffer(_sceneBuffers[i])
+			.setBuffer(sceneUniform.buffer.data)
 			.setOffset(0)
 			.setRange(vk::DeviceSize(sizeof(SceneUniform)));
 
@@ -114,71 +70,39 @@ DefaultUniform::DefaultUniform(const VulkanContext& vkCtx, int count) : _vkCtx(v
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDstBinding(0)
 			.setDstArrayElement(0)
-			.setDstSet(_sceneDescriptors[i])
+			.setDstSet(sceneUniform.descriptor)
 			.setPBufferInfo(&sceneDescBufferInfo);
-
 
 		vkCtx.getDevice().updateDescriptorSets({ sceneWriteInfo, modelWriteInfo }, {});
 	}
 }
 
-std::vector<vk::Buffer>& DefaultUniform::getSceneBuffers()
-{
-	return _sceneBuffers;
-}
 
-std::vector<vk::Buffer>& DefaultUniform::getModelBuffers()
-{
-	return _modelBuffers;
-}
-
-std::vector<void*>& DefaultUniform::getSceneDatas()
-{
-	return _sceneDatas;
-}
-
-std::vector<void*>& DefaultUniform::getModelDatas()
-{
-	return _modelDatas;
-}
-
-std::vector<vk::DescriptorSet>& DefaultUniform::getSceneDescriptors()
-{
-	return _sceneDescriptors;
-}
-
-std::vector<vk::DescriptorSet>& DefaultUniform::getModelDescriptors()
-{
-	return _modelDescriptors;
-}
-
-vk::DescriptorSetLayout DefaultUniform::getSceneLayout()
+vk::DescriptorSetLayout DefaultUniformLayout::getSceneLayout()
 {
 	return _sceneLayout;
 }
 
-vk::DescriptorSetLayout DefaultUniform::getModelLayout()
+vk::DescriptorSetLayout DefaultUniformLayout::getModelLayout()
 {
 	return _modelLayout;
 }
 
-std::vector<VmaAllocation>& DefaultUniform::getSceneAllocations()
+std::vector<Uniform<SceneUniform>>& DefaultUniformLayout::getSceneUniforms()
 {
-	return _sceneAllocations;
+	return _sceneUniforms;
 }
 
-std::vector<VmaAllocation>& DefaultUniform::getModelAllocations()
+std::vector<Uniform<ModelUniform>>& DefaultUniformLayout::getModelUniforms()
 {
-	return _modelAllocations;
+	return _modelUniforms;
 }
 
-DefaultUniform::~DefaultUniform()
+DefaultUniformLayout::~DefaultUniformLayout()
 {
-	for (int i = 0; i < _modelBuffers.size(); i++) {
-		vmaUnmapMemory(_vkCtx.getAllocator(), _modelAllocations[i]);
-		vmaUnmapMemory(_vkCtx.getAllocator(), _sceneAllocations[i]);
-		vmaFreeMemory(_vkCtx.getAllocator(), _modelAllocations[i]);
-		vmaFreeMemory(_vkCtx.getAllocator(), _sceneAllocations[i]);
+	for (int i = 0; i < _modelUniforms.size(); i++) {
+		vmaUnmapMemory(_vkCtx.getAllocator(), _modelUniforms[i].buffer.allocation);
+		vmaUnmapMemory(_vkCtx.getAllocator(), _sceneUniforms[i].buffer.allocation);
 	}
 	_vkCtx.deviceDestroy(_sceneLayout);
 	_vkCtx.deviceDestroy(_modelLayout);

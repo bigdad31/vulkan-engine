@@ -41,47 +41,19 @@ struct Model
 };
 
 struct BakedModel {
-	vk::Buffer vertexData;
-	size_t nVertices;
-	vk::Buffer indexData;
-	size_t nIndices;
-	VmaAllocation vertexAllocation;
-	VmaAllocationInfo vertexAllocInfo;
-	VmaAllocation indexAllocation;
-	VmaAllocationInfo indexAllocInfo;
+	Buffer<Vertex> vertices;
+	Buffer<uint32_t> indices;
 
 	void destroy(const VulkanContext& vkCtx) {
-		vmaFreeMemory(vkCtx.getAllocator(), vertexAllocation);
-		vmaFreeMemory(vkCtx.getAllocator(), indexAllocation);
-		vkCtx.deviceDestroy(vertexData);
-		vkCtx.deviceDestroy(indexData);
+		vertices.destroy(vkCtx);
+		indices.destroy(vkCtx);
 	}
 };
 
 inline void submitModelBake(const VulkanContext& vkCtx, AsyncTransferHandler& transferHandler, const std::span<Model>& models, std::span<BakedModel>& bakedModels) {
 	for (int i = 0; i < bakedModels.size(); i++) {
-		const auto& model = models[i];
-		auto& bakedModel = bakedModels[i];
-
-		auto vertexInfo = vk::BufferCreateInfo()
-			.setUsage(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst)
-			.setSharingMode(vk::SharingMode::eExclusive)
-			.setSize(sizeof(Vertex) * model.vertices.size());
-
-
-		auto indexInfo = vk::BufferCreateInfo()
-			.setUsage(vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst)
-			.setSharingMode(vk::SharingMode::eExclusive)
-			.setSize(sizeof(uint32_t) * model.indices.size());
-
-		bakedModel.nVertices = model.vertices.size();
-		bakedModel.nIndices = model.indices.size();
-		
-		VmaAllocationCreateInfo allocCreateInfo{};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		vmaCreateBuffer(vkCtx.getAllocator(), (VkBufferCreateInfo*)(&indexInfo), &allocCreateInfo, (VkBuffer*)&bakedModel.indexData, &bakedModel.indexAllocation, &bakedModel.indexAllocInfo);
-		vmaCreateBuffer(vkCtx.getAllocator(), (VkBufferCreateInfo*)(&vertexInfo), &allocCreateInfo, (VkBuffer*)&bakedModel.vertexData, &bakedModel.vertexAllocation, &bakedModel.vertexAllocInfo);
+		bakedModels[i].vertices = Buffer<Vertex>(vkCtx, models[i].vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst);
+		bakedModels[i].indices = Buffer<uint32_t>(vkCtx, models[i].indices.size(), vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst);
 	}
 
 	transferHandler.beginTransferCommand();
@@ -93,8 +65,8 @@ inline void submitModelBake(const VulkanContext& vkCtx, AsyncTransferHandler& tr
 			transferHandler.resetAndSubmitPool();
 			transferHandler.beginTransferCommand();
 		}
-		transferHandler.addTransfer(model.vertices.data(), sizeof(Vertex) * model.vertices.size(), bakedModel.vertexData);
-		transferHandler.addTransfer(model.indices.data(), sizeof(uint16_t) * model.indices.size(), bakedModel.indexData);
+		transferHandler.addTransfer(model.vertices.data(), sizeof(Vertex) * model.vertices.size(), bakedModel.vertices.data);
+		transferHandler.addTransfer(model.indices.data(), sizeof(uint16_t) * model.indices.size(), bakedModel.indices.data);
 	}
 	transferHandler.resetAndSubmitPool();
 }

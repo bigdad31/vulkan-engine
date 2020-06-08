@@ -15,10 +15,6 @@ struct QueueFamilies {
 	std::optional <uint32_t> graphicsInd;
 };
 
-struct MemoryIndices {
-	uint32_t hostInd;
-};
-
 class VulkanContext
 {
 	const vk::Instance _instance;
@@ -97,4 +93,29 @@ public:
 
 
 	void destroySurface(vk::SurfaceKHR surface) const;
+};
+
+template<class T>
+struct Buffer {
+	vk::Buffer data;
+	VmaAllocation allocation;
+	size_t size;
+
+	Buffer() = default;
+	Buffer(const VulkanContext &vkCtx, size_t size, vk::BufferUsageFlags usage, VmaMemoryUsage memory = VMA_MEMORY_USAGE_GPU_ONLY) {
+		this->size = size;
+		auto info = vk::BufferCreateInfo()
+			.setUsage(usage)
+			.setSharingMode(vk::SharingMode::eExclusive)
+			.setSize(sizeof(T) * size);
+
+		VmaAllocationCreateInfo allocCreateInfo{};
+		allocCreateInfo.usage = memory;
+
+		vmaCreateBuffer(vkCtx.getAllocator(), (VkBufferCreateInfo*)(&info), &allocCreateInfo, (VkBuffer*)&data, &allocation, nullptr);
+	}
+
+	void destroy(const VulkanContext& vkCtx) {
+		vmaDestroyBuffer(vkCtx.getAllocator(), data, allocation);
+	}
 };

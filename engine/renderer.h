@@ -14,7 +14,7 @@ class Renderer
 	vk::SurfaceKHR _surface;
 	Swapchain _swapchain;
 	DepthStencil _depthStencil;
-	DefaultUniform _uniform;
+	DefaultUniformLayout _uniform;
 	Pipeline _pipeline;
 	AsyncTransferHandler _transferHandler;
 
