@@ -1,8 +1,9 @@
 #include "renderer.h"
 #include <array>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
-void Renderer::drawFrame()
+void Renderer::drawFrame(const GameState& gameState)
 {
 	_vkCtx.getDevice().waitForFences({ _inFlightFences[_frame].get() }, true, UINT64_MAX);
 
@@ -18,11 +19,17 @@ void Renderer::drawFrame()
 
 	SceneUniform scene = {
 		glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f),
-		glm::lookAt(glm::vec3{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f})
+		gameState.getCamera()
 	};
-
-	memcpy(_uniform.getSceneUniforms()[imageIndex].data, &scene, sizeof(SceneUniform));
-	//vmaFlushAllocation(_vkCtx.getAllocator(), _uniform.getModelAllocations()[imageIndex], 0, VK_WHOLE_SIZE);
+	unsigned i = 0;
+	for (const auto& object : gameState.getObjects()) {
+		for (const auto& instance : object.instances) {
+			glm::mat4 matrix = scene.proj*scene.view * glm::translate(glm::toMat4(instance.rotation), instance.position);
+			memcpy((char*)(_uniform.getModelUniforms()[imageIndex].data) + i * _uniform.getModelUniforms()[i].buffer.getMinSize(), &matrix, sizeof(glm::mat4));
+			i++;
+		}
+	}
+	vmaFlushAllocation(_vkCtx.getAllocator(), _uniform.getModelUniforms()[imageIndex].buffer.allocation, 0, VK_WHOLE_SIZE);
 	auto renderArea = vk::Rect2D();
 
 	auto beginInfo = vk::CommandBufferBeginInfo();
@@ -38,11 +45,16 @@ void Renderer::drawFrame()
 		commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline.getPipeline());
 			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 0, { _uniform.getSceneUniforms()[imageIndex].descriptor }, { });
-			for (const auto& model : _bakedModels) {
+			i = 0;
+			for (const auto& object : gameState.getObjects()) {
 				vk::DeviceSize offset{};
-				commandBuffer.bindVertexBuffers(0, 1, &model.vertices.data, &offset);
-				commandBuffer.bindIndexBuffer(model.indices.data, 0, vk::IndexType::eUint16);
-				commandBuffer.drawIndexed(model.indices.size, 1, 0, 0, 0);
+				commandBuffer.bindVertexBuffers(0, 1, &object.model.vertices.data, &offset);
+				commandBuffer.bindIndexBuffer(object.model.indices.data, 0, vk::IndexType::eUint16);
+				for (const auto& model : object.instances) {
+					commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 1, { _uniform.getModelUniforms()[imageIndex].descriptor }, { i*(unsigned)_uniform.getModelUniforms()[i].buffer.getMinSize() });
+					commandBuffer.drawIndexed(object.model.indices.size, 1, 0, 0, 0);
+					i++;
+				}
 			}
 		commandBuffer.endRenderPass();
 	commandBuffer.end();
@@ -77,7 +89,5 @@ void Renderer::drawFrame()
 
 Renderer::~Renderer()
 {
-	for (auto &bakedModel : _bakedModels) {
-		bakedModel.destroy(_vkCtx);
-	}
+
 }

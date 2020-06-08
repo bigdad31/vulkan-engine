@@ -5,6 +5,7 @@
 #include "asynctransferhandler.h"
 #include "model.h"
 #include "defaultuniform.h"
+#include "gamestate.h"
 
 constexpr int maxFramesInFlight = 2;
 
@@ -24,7 +25,6 @@ class Renderer
 
 	vk::CommandPool _commandPool;
 	std::vector<vk::CommandBuffer> _commandBuffers;
-	std::vector<BakedModel> _bakedModels;
 	size_t _frame = 0;
 
 public:
@@ -51,26 +51,6 @@ public:
 			_inFlightFences[i] = vkCtx.getDevice().createFenceUnique(fenceInfo);
 		}
 
-		const std::vector<Vertex> vertices = {
-			{{0.0f, -0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}},
-			{{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-			{{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-		};
-
-		const std::vector<uint16_t> indices = { 0, 1, 2 };
-
-		const std::vector<Vertex> vertices2 = {
-			{{0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-			{{0.5f, -0.3f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-			{{-0.5f, -0.3f, 0.0f}, {0.0f, 0.0f, 1.0f}}
-		};
-		Model model;
-		model.vertices = vertices;
-		model.indices = indices;
-		std::vector<Model> models = { model, {vertices2, indices} };
-		_bakedModels.resize(models.size());
-		submitModelBake(vkCtx, _transferHandler, models, std::span<BakedModel>(_bakedModels.data(), _bakedModels.size()));
-
 		uint32_t graphicsQueue = vkCtx.getQueueFamilies().graphicsInd.value();
 		_commandPool = vkCtx.getDevice().createCommandPool(vk::CommandPoolCreateInfo().setQueueFamilyIndex(graphicsQueue).setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer));
 
@@ -84,7 +64,11 @@ public:
 		int count = _swapchain.getImageViews().size();
 	}
 
+	void bakeModels(const std::span<Model>& models, std::span<BakedModel>& bakedModels) {
+		submitModelBake(_vkCtx, _transferHandler, models, bakedModels);
+	}
+
 	Renderer(const Renderer&) = delete;
-	void drawFrame();
+	void drawFrame(const GameState& gameState);
 	~Renderer();
 };

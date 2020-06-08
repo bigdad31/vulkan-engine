@@ -42,7 +42,7 @@ struct Model
 
 struct BakedModel {
 	Buffer<Vertex> vertices;
-	Buffer<uint32_t> indices;
+	Buffer<uint16_t> indices;
 
 	void destroy(const VulkanContext& vkCtx) {
 		vertices.destroy(vkCtx);
@@ -53,7 +53,7 @@ struct BakedModel {
 inline void submitModelBake(const VulkanContext& vkCtx, AsyncTransferHandler& transferHandler, const std::span<Model>& models, std::span<BakedModel>& bakedModels) {
 	for (int i = 0; i < bakedModels.size(); i++) {
 		bakedModels[i].vertices = Buffer<Vertex>(vkCtx, models[i].vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst);
-		bakedModels[i].indices = Buffer<uint32_t>(vkCtx, models[i].indices.size(), vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst);
+		bakedModels[i].indices = Buffer<uint16_t>(vkCtx, models[i].indices.size(), vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst);
 	}
 
 	transferHandler.beginTransferCommand();

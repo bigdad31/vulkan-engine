@@ -35,7 +35,7 @@ add_executable (engine
 	"shader.h"
 	"shader.cpp"
 	${KERNELS}
-	${COMPILED_KERNELS} "renderer.h" "renderer.cpp" "model.h" "model.cpp" "asynctransferhandler.h" "asynctransferhandler.cpp" "depthstencil.h" "depthstencil.cpp" "defaultuniform.h" "defaultuniform.cpp")
+	${COMPILED_KERNELS} "renderer.h" "renderer.cpp" "model.h" "model.cpp" "asynctransferhandler.h" "asynctransferhandler.cpp" "depthstencil.h" "depthstencil.cpp" "defaultuniform.h" "defaultuniform.cpp" "gamestate.h" "gamestate.cpp")
 
 foreach(KERNEL ${KERNELS})
 	add_custom_command(OUTPUT ${KERNEL}.spv

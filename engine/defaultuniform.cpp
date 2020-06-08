@@ -16,23 +16,26 @@ DefaultUniformLayout::DefaultUniformLayout(const VulkanContext& vkCtx, int count
 	auto modelLayoutBinding = vk::DescriptorSetLayoutBinding()
 		.setBinding(0)
 		.setDescriptorCount(1)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
 		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
 	auto modelLayoutCreateInfo = vk::DescriptorSetLayoutCreateInfo()
 		.setBindingCount(1)
-		.setPBindings(&sceneLayoutBinding);
+		.setPBindings(&modelLayoutBinding);
 
 	_modelLayout = _vkCtx.getDevice().createDescriptorSetLayout(modelLayoutCreateInfo);
 
 	vk::DescriptorPoolSize descriptorPoolSize[] = {
 		vk::DescriptorPoolSize()
-			.setDescriptorCount(2*count)
+			.setDescriptorCount(count)
+			.setType(vk::DescriptorType::eUniformBufferDynamic),
+		vk::DescriptorPoolSize()
+			.setDescriptorCount(count)
 			.setType(vk::DescriptorType::eUniformBuffer)
 	};
 
 	auto descriptorPoolInfo = vk::DescriptorPoolCreateInfo()
-		.setMaxSets(2*count)
+		.setMaxSets(2 * count)
 		.setPPoolSizes(descriptorPoolSize)
 		.setPoolSizeCount(1);
 
@@ -44,8 +47,8 @@ DefaultUniformLayout::DefaultUniformLayout(const VulkanContext& vkCtx, int count
 		auto& modelUniform = _modelUniforms[i];
 		auto& sceneUniform = _sceneUniforms[i];
 
-		modelUniform = Uniform<ModelUniform>(vkCtx, 128, _descriptorPool, _modelLayout);
-		sceneUniform = Uniform<SceneUniform>(vkCtx, 128, _descriptorPool, _sceneLayout);
+		modelUniform = Uniform<ModelUniform, 256>(vkCtx, 128, _descriptorPool, _modelLayout);
+		sceneUniform = Uniform<SceneUniform>(vkCtx, 1, _descriptorPool, _sceneLayout);
 
 		auto modelDescBufferInfo = vk::DescriptorBufferInfo()
 			.setBuffer(modelUniform.buffer.data)
@@ -54,7 +57,7 @@ DefaultUniformLayout::DefaultUniformLayout(const VulkanContext& vkCtx, int count
 
 		auto modelWriteInfo = vk::WriteDescriptorSet()
 			.setDescriptorCount(1)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
 			.setDstBinding(0)
 			.setDstArrayElement(0)
 			.setDstSet(modelUniform.descriptor)
@@ -93,7 +96,7 @@ std::vector<Uniform<SceneUniform>>& DefaultUniformLayout::getSceneUniforms()
 	return _sceneUniforms;
 }
 
-std::vector<Uniform<ModelUniform>>& DefaultUniformLayout::getModelUniforms()
+std::vector<Uniform<ModelUniform, 256>>& DefaultUniformLayout::getModelUniforms()
 {
 	return _modelUniforms;
 }

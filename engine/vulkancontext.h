@@ -95,7 +95,7 @@ public:
 	void destroySurface(vk::SurfaceKHR surface) const;
 };
 
-template<class T>
+template<class T, size_t minPadding = 0>
 struct Buffer {
 	vk::Buffer data;
 	VmaAllocation allocation;
@@ -107,12 +107,16 @@ struct Buffer {
 		auto info = vk::BufferCreateInfo()
 			.setUsage(usage)
 			.setSharingMode(vk::SharingMode::eExclusive)
-			.setSize(sizeof(T) * size);
+			.setSize(getMinSize() * size);
 
 		VmaAllocationCreateInfo allocCreateInfo{};
 		allocCreateInfo.usage = memory;
 
 		vmaCreateBuffer(vkCtx.getAllocator(), (VkBufferCreateInfo*)(&info), &allocCreateInfo, (VkBuffer*)&data, &allocation, nullptr);
+	}
+
+	size_t getMinSize() {
+		return (minPadding > sizeof(T)?minPadding: sizeof(T));
 	}
 
 	void destroy(const VulkanContext& vkCtx) {

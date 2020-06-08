@@ -7,12 +7,11 @@ layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec4 inColor;
 
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 proj;
-    mat4 view;
-} scene;
+layout(set=1, binding = 0) uniform UniformBufferObject {
+    mat4 trans;
+} model;
 
 void main() {
-    gl_Position = scene.proj * scene.view * inPosition;
+    gl_Position = model.trans * inPosition;
     fragColor = inColor;
 }

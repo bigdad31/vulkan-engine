@@ -2,13 +2,13 @@
 #include "vulkancontext.h"
 #include "glm/glm.hpp"
 
-template<class T>
+template<class T, size_t minPadding = 0>
 struct Uniform {
-	Buffer<T> buffer;
+	Buffer<T, minPadding> buffer;
 	vk::DescriptorSet descriptor;
 	void* data;
 	Uniform() = default;
-	Uniform(const VulkanContext &vkCtx, size_t size, vk::DescriptorPool pool, vk::DescriptorSetLayout layout) : 
+	Uniform(const VulkanContext &vkCtx, size_t size, vk::DescriptorPool pool, vk::DescriptorSetLayout layout) :
 			buffer(vkCtx, size, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU) {
 		auto sceneDescriptorAllocInfo = vk::DescriptorSetAllocateInfo()
 			.setDescriptorPool(pool)
@@ -21,8 +21,8 @@ struct Uniform {
 };
 
 struct SceneUniform {
-	glm::mat4 view;
 	glm::mat4 proj;
+	glm::mat4 view;
 };
 
 struct ModelUniform {
@@ -36,7 +36,7 @@ class DefaultUniformLayout
 	vk::DescriptorSetLayout _modelLayout;
 
 	std::vector<Uniform<SceneUniform>> _sceneUniforms;
-	std::vector<Uniform<ModelUniform>> _modelUniforms;
+	std::vector<Uniform<ModelUniform, 256>> _modelUniforms;
 
 	vk::DescriptorPool _descriptorPool;
 public:
@@ -46,7 +46,7 @@ public:
 	vk::DescriptorSetLayout getModelLayout();
 
 	std::vector<Uniform<SceneUniform>>& getSceneUniforms();
-	std::vector<Uniform<ModelUniform>>& getModelUniforms();
+	std::vector<Uniform<ModelUniform, 256>>& getModelUniforms();
 	~DefaultUniformLayout();
 };
 
