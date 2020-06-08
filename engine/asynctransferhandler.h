@@ -1,7 +1,7 @@
 #pragma once
 #include "vulkancontext.h"
 
-class TransferHandler
+class AsyncTransferHandler
 {
 	const VulkanContext& _vkCtx;
 	vk::CommandPool _commandPool;
@@ -13,7 +13,7 @@ class TransferHandler
 	size_t _pos;
 	size_t _size;
 public:
-	TransferHandler(const VulkanContext& vkCtx) : _vkCtx(vkCtx), _pos(0), _size(16777216) {
+	AsyncTransferHandler(const VulkanContext& vkCtx) : _vkCtx(vkCtx), _pos(0), _size(16777216) {
 		auto stagingInfo = vk::BufferCreateInfo()
 			.setUsage(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc)
 			.setSharingMode(vk::SharingMode::eExclusive)

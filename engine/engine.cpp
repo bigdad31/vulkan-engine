@@ -9,7 +9,7 @@
 #include <optional>
 #include <vector>
 #include "model.h"
-#include "transferhandler.h"
+#include "asynctransferhandler.h"
 
 #include "renderer.h"
 #include <chrono>

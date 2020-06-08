@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vulkancontext.h"
+#include "defaultuniform.h"
 #include "swapchain.h"
 #include "shader.h"
 
@@ -13,10 +14,10 @@ class Pipeline
 	const vk::RenderPass _renderPass;
 	const std::vector<vk::Framebuffer> _framebuffers;
 
-	static Pipeline createPipeline(const VulkanContext &vkCtx, const Swapchain &swapchain, vk::ImageView depthView);
+	static Pipeline createPipeline(const VulkanContext &vkCtx, const Swapchain &swapchain, vk::ImageView depthView, DefaultUniform &uniform);
 public:
 	Pipeline(const VulkanContext& vkCtx, vk::Rect2D _scissors, vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass, std::vector<vk::Framebuffer> framebuffers);
-	Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView);
+	Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniform &uniform);
 	Pipeline(Pipeline&) = delete;
 	~Pipeline();
 
@@ -34,5 +35,9 @@ public:
 	
 	vk::RenderPass getRenderPass() const {
 		return _renderPass;
+	}
+
+	vk::PipelineLayout getLayout() const {
+		return _pipelineLayout;
 	}
 };

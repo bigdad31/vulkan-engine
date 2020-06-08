@@ -261,7 +261,7 @@ QueueFamilies VulkanContext::getQueueFamilies() const
 	return _queueFamilies;
 }
 
-void VulkanContext::destroy(vk::SurfaceKHR& surface) const
+void VulkanContext::destroySurface(vk::SurfaceKHR surface) const
 {
 	_instance.destroy(surface);
 }

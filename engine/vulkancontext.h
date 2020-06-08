@@ -96,5 +96,5 @@ public:
 	}
 
 
-	void destroy(vk::SurfaceKHR& surface) const;
+	void destroySurface(vk::SurfaceKHR surface) const;
 };

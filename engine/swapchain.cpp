@@ -93,6 +93,7 @@ Swapchain::Swapchain(const VulkanContext& vkCtx, vk::SwapchainKHR swapchain, std
 
 Swapchain::~Swapchain()
 {
+	_vkCtx.destroySurface(_surface);
 	for (const auto& imageView : _imageViews) {
 		_vkCtx.getDevice().destroy(imageView);
 	}

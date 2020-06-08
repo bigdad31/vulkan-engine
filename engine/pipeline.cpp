@@ -2,8 +2,9 @@
 
 #include <algorithm>
 #include "model.h"
+#include "depthstencil.h"
 
-Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView)
+Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniform &uniform)
 {
 	Shader vertShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.vert.spv");
 	Shader fragShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.frag.spv");
@@ -74,8 +75,12 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setAttachmentCount(1)
 		.setPAttachments(&colorBlendAttachment)
 		.setLogicOpEnable(false);
+	std::vector<vk::DescriptorSetLayout> layouts({ uniform.getSceneLayout(), uniform.getModelLayout() });
 
-	auto pipelineInfo = vk::PipelineLayoutCreateInfo();
+	auto pipelineInfo = vk::PipelineLayoutCreateInfo()
+		.setSetLayoutCount(layouts.size())
+		.setPSetLayouts(layouts.data());
+
 	vk::PipelineLayout pipelineLayout = vkCtx.getDevice().createPipelineLayout(pipelineInfo);
 
 	auto colorAttachment = vk::AttachmentDescription()
@@ -86,15 +91,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setInitialLayout(vk::ImageLayout::eUndefined)
 		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
-	auto depthAttachment = vk::AttachmentDescription()
-		.setFormat(vk::Format::eD32Sfloat)
-		.setSamples(vk::SampleCountFlagBits::e1)
-		.setLoadOp(vk::AttachmentLoadOp::eClear)
-		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eUndefined)
-		.setFinalLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+	auto depthAttachment = DepthStencil::getDepthAttachment();
 
 	auto colorAttachmentRef = vk::AttachmentReference()
 		.setAttachment(0)
@@ -102,7 +99,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 
 	auto depthAttachmentRef = vk::AttachmentReference()
 		.setAttachment(1)
-		.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		.setLayout(DepthStencil::getLayout());
 
 	auto subpass = vk::SubpassDescription()
 		.setColorAttachmentCount(1)
@@ -167,8 +164,8 @@ Pipeline::Pipeline(const VulkanContext& vkCtx, vk::Rect2D scissors, vk::Pipeline
 {
 }
 
-Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView)
-	: Pipeline(createPipeline(vkCtx, swapchain, depthView))
+Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniform &uniform)
+	: Pipeline(createPipeline(vkCtx, swapchain, depthView, uniform))
 {
 }
 

@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <span>
 #include "vulkancontext.h"
-#include "transferhandler.h"
+#include "asynctransferhandler.h"
 
 
 struct Vertex {
@@ -58,7 +58,7 @@ struct BakedModel {
 	}
 };
 
-inline void submitModelBake(const VulkanContext& vkCtx, TransferHandler& transferHandler, const std::span<Model>& models, std::span<BakedModel>& bakedModels) {
+inline void submitModelBake(const VulkanContext& vkCtx, AsyncTransferHandler& transferHandler, const std::span<Model>& models, std::span<BakedModel>& bakedModels) {
 	for (int i = 0; i < bakedModels.size(); i++) {
 		const auto& model = models[i];
 		auto& bakedModel = bakedModels[i];
