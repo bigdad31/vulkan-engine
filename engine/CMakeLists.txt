@@ -9,6 +9,7 @@ find_package(Vulkan)
 find_package(SDL2 REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(libpng CONFIG REQUIRED)
+find_package(Bullet CONFIG REQUIRED)
 
 include_directories(engine ${Boost_INCLUDE_DIRS})
 include_directories(engine ${ASSIMP_INCLUDE_DIR})
@@ -17,6 +18,14 @@ include_directories(engine ${Vulkan_INCLUDE_DIRS})
 set(KERNELS
 	shaders/default.frag
 	shaders/default.vert
+)
+
+set(MODELS
+	models/bruh.glb
+)
+
+set(OUTPUT_MODELS
+	${CMAKE_CURRENT_SOURCE_DIR}/models/bruh.glb
 )
 
 set(COMPILED_KERNELS
@@ -35,6 +44,8 @@ add_executable (engine
 	"shader.h"
 	"shader.cpp"
 	${KERNELS}
+	${MODELS}
+	${OUTPUT_MODELS}
 	${COMPILED_KERNELS} "renderer.h" "renderer.cpp" "model.h" "model.cpp" "asynctransferhandler.h" "asynctransferhandler.cpp" "depthstencil.h" "depthstencil.cpp" "defaultuniform.h" "defaultuniform.cpp" "gamestate.h" "gamestate.cpp")
 
 foreach(KERNEL ${KERNELS})
@@ -45,7 +56,15 @@ foreach(KERNEL ${KERNELS})
 	message(STATUS "Generating build commands for ${KERNEL}.spv")
 endforeach()
 
+foreach(MODEL ${MODELS})
+	add_custom_command(OUTPUT ${MODEL}.glb
+	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL}" "${CMAKE_CURRENT_BINARY_DIR}/${MODEL}"
+	DEPENDS ${KERNEL})
+	message(STATUS "Generating build commands for ${KERNEL}.spv")
+endforeach()
+
 target_link_libraries(engine PRIVATE assimp::assimp)
 target_link_libraries(engine PRIVATE ${Vulkan_LIBRARIES})
 target_link_libraries(engine PRIVATE SDL2::SDL2 SDL2::SDL2main)
 target_link_libraries(engine PRIVATE png)
+target_link_libraries(engine PRIVATE LinearMath Bullet3Common BulletDynamics BulletCollision BulletSoftBody)

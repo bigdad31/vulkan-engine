@@ -17,14 +17,19 @@ void Renderer::drawFrame(const GameState& gameState)
 
 	vk::ClearValue clearValues[] = { clearColor, clearDepth };
 
-	SceneUniform scene = {
-		glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f),
-		gameState.getCamera()
+	glm::mat4 coordTransform = {
+		{1, 0, 0, 0}, 
+		{0, 0, -1, 0},
+		{0, -1, 0, 0},
+		{0, 0, 0, 1} 
 	};
+
+	glm::mat4 sceneMatrix = glm::perspective(glm::radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f) * coordTransform * glm::inverse(gameState.getCamera());
+
 	unsigned i = 0;
 	for (const auto& object : gameState.getObjects()) {
 		for (const auto& instance : object.instances) {
-			glm::mat4 matrix = scene.proj*scene.view * glm::translate(glm::toMat4(instance.rotation), instance.position);
+			glm::mat4 matrix = sceneMatrix * glm::translate(glm::toMat4(instance.rotation), instance.position);
 			memcpy((char*)(_uniform.getModelUniforms()[imageIndex].data) + i * _uniform.getModelUniforms()[i].buffer.getMinSize(), &matrix, sizeof(glm::mat4));
 			i++;
 		}

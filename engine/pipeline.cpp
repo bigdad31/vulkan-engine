@@ -46,7 +46,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setDepthClampEnable(false)
 		.setCullMode(vk::CullModeFlagBits::eBack)
 		.setRasterizerDiscardEnable(false)
-		.setFrontFace(vk::FrontFace::eClockwise)
+		.setFrontFace(vk::FrontFace::eCounterClockwise)
 		.setPolygonMode(vk::PolygonMode::eFill)
 		.setLineWidth(1)
 		.setDepthBiasEnable(false);

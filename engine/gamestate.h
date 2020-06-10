@@ -3,6 +3,8 @@
 #include "model.h"
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <bullet/btBulletDynamicsCommon.h>
+#include <memory>
 
 struct DynamicObjectState {
 	glm::vec3 position;
@@ -11,13 +13,8 @@ struct DynamicObjectState {
 	glm::quat rotationalVelocity;
 };
 
-struct DynamicObjectProperties {
-	float mass;
-};
-
 struct Object {
 	BakedModel model;
-	DynamicObjectProperties properties;
 	std::vector<DynamicObjectState> instances;
 };
 
@@ -29,4 +26,17 @@ struct GameState
 	glm::mat4 getCamera() const;
 
 	void destroy(const VulkanContext& vkCtx);
+};
+
+class Physics {
+	std::unique_ptr<btDefaultCollisionConfiguration> _configurator;
+	std::unique_ptr<btCollisionDispatcher> _dispatcher;
+	std::unique_ptr<btBroadphaseInterface> _overlappingPairCache;
+	std::unique_ptr<btSequentialImpulseConstraintSolver> _solver;
+	std::unique_ptr<btDynamicsWorld> _dynamicsWorld;
+public:
+	Physics();
+	void addObject(DynamicObjectState &state) {
+
+	}
 };
