@@ -37,51 +37,16 @@ int main()
 		VulkanContext vkCtx(window);
 		GameState gameState;
 		Physics physics;
-
-		Model model = Model::loadFromFile("models/bruh.fbx");
-		Model floor = Model::loadFromFile("models/ground.fbx");
-		std::vector<Model> models = { model, floor, model};
-		std::vector<btScalar> masses = { 1.0, 0.0, 1.0 };
-		std::vector<btCollisionShape*> shapes = { new btSphereShape(1.0), new btBoxShape(btVector3(btScalar(10.), btScalar(10.0), btScalar(0.5))), new btSphereShape(1.0) };
-		std::vector<btVector3> startVelocities = { {0, 0, 0.1}, {0, 0, 0}, {0, 1, 0} };
-		std::vector<btVector3> startPositions = { {0, 0, 0}, {0, 0, -3}, {0, 0, 2.5} };
-		std::vector<BakedModel> bakedModels(models.size());
-
 		Renderer renderer(vkCtx, window);
-		renderer.bakeModels(models, std::span<BakedModel>(bakedModels.data(), bakedModels.size()));
 
-		gameState.objects.resize(bakedModels.size());
-		for (int i = 0; i < models.size(); i++) {
-			gameState.objects[i].model = bakedModels[i];
+		gameState.loadFromFile(renderer, "scenes/scene.json");
 
-			btTransform transform;
-			transform.setIdentity();
-			transform.setOrigin(startPositions[i]);
-			bool isDynamic = masses[i] != 0;
-			btVector3 localInertia(0, 0, 0);
-			if (isDynamic)
-				shapes[i]->calculateLocalInertia(masses[i], localInertia);
-
-			btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-
-			btRigidBody::btRigidBodyConstructionInfo rbInfo(masses[i], motionState, shapes[i], localInertia);
-			btRigidBody* body = new btRigidBody(rbInfo);
-			body->setLinearVelocity(startVelocities[i]);
-			DynamicObjectState state;
-			state.inertia = localInertia;
-			state.motion = motionState;
-			state.rigidBody = body;
-
-			gameState.objects[i].instances = { state };
-			gameState.objects[i].mass = masses[i];
-			gameState.objects[i].shape = shapes[i];
-
-			physics.addObject(state);
+		for (Object& object : gameState.objects) {
+			for (DynamicObjectState& instance : object.instances) {
+				physics.addObject(instance);
+			}
 		}
 
-		float cameraX = 0;
-		float cameraY = 0;
-		glm::vec3 cameraPos{0.0f, -3.0f, 0.0f};
 		std::chrono::time_point last = std::chrono::high_resolution_clock::now();
 		{
 			bool running = true;
@@ -94,8 +59,8 @@ int main()
 						running = false;
 					}
 					if (evt.type == SDL_MOUSEMOTION) {
-						cameraX -= evt.motion.xrel * delta.count();
-						cameraY -= evt.motion.yrel * delta.count();
+						gameState.cameraX -= evt.motion.xrel * delta.count();
+						gameState.cameraY -= evt.motion.yrel * delta.count();
 					}
 				}
 				const Uint8* keystate = SDL_GetKeyboardState(nullptr);
@@ -119,11 +84,7 @@ int main()
 					cameraChange += glm::vec3{ 0, 0, -1 };
 				}
 
-				glm::mat4 a = glm::rotate(glm::mat4(1.0f), cameraX, { 0.0f, 0.0f, 1.0f });
-				glm::mat4 b = glm::rotate(a, cameraY, { 1.0f, 0.0f, 0.0f });
-				cameraPos += glm::vec3(b * glm::vec4(cameraChange * delta.count() * 2.0f, 0.0f));
-				glm::mat4 c = glm::translate(glm::mat4(1.0f), cameraPos);
-				gameState.camera = c*b;
+				gameState.cameraPos += glm::vec3(gameState.getCameraMatrix() * glm::vec4(cameraChange * delta.count() * 2.0f, 0.0f));
 				physics.stepPhysics(delta.count());
 				renderer.drawFrame(gameState);
 			}

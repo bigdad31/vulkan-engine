@@ -10,10 +10,12 @@ find_package(SDL2 REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(libpng CONFIG REQUIRED)
 find_package(Bullet CONFIG REQUIRED)
+find_package(RapidJSON CONFIG REQUIRED)
 
 include_directories(engine ${Boost_INCLUDE_DIRS})
 include_directories(engine ${ASSIMP_INCLUDE_DIR})
 include_directories(engine ${Vulkan_INCLUDE_DIRS})
+include_directories(engine PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
 
 set(KERNELS
 	shaders/default.frag
@@ -46,7 +48,7 @@ add_executable (engine
 	${KERNELS}
 	${MODELS}
 	${OUTPUT_MODELS}
-	${COMPILED_KERNELS} "renderer.h" "renderer.cpp" "model.h" "model.cpp" "asynctransferhandler.h" "asynctransferhandler.cpp" "depthstencil.h" "depthstencil.cpp" "defaultuniform.h" "defaultuniform.cpp" "gamestate.h" "gamestate.cpp")
+	${COMPILED_KERNELS} "renderer.h" "renderer.cpp" "model.h" "model.cpp" "asynctransferhandler.h" "asynctransferhandler.cpp" "depthstencil.h" "depthstencil.cpp" "defaultuniform.h" "defaultuniform.cpp" "gamestate.h" "gamestate.cpp"  )
 
 foreach(KERNEL ${KERNELS})
 	add_custom_command(OUTPUT ${KERNEL}.spv

@@ -5,7 +5,7 @@
 #include "asynctransferhandler.h"
 #include "model.h"
 #include "defaultuniform.h"
-#include "gamestate.h"
+class GameState;
 
 constexpr int maxFramesInFlight = 2;
 

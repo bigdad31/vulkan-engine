@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "gamestate.h"
 #include <array>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -24,10 +25,10 @@ void Renderer::drawFrame(const GameState& gameState)
 		{0, 0, 0, 1} 
 	};
 
-	glm::mat4 sceneMatrix = glm::perspective(glm::radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f) * coordTransform * glm::inverse(gameState.getCamera());
+	glm::mat4 sceneMatrix = glm::perspective(glm::radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f) * coordTransform * glm::inverse(gameState.getCameraMatrix());
 
 	unsigned i = 0;
-	for (const auto& object : gameState.getObjects()) {
+	for (const auto& object : gameState.objects) {
 		for (const auto& instance : object.instances) {
 			btTransform transform;
 			instance.motion->getWorldTransform(transform);
@@ -37,7 +38,7 @@ void Renderer::drawFrame(const GameState& gameState)
 			ModelUniform uniform;
 			uniform.modelTrans = trans;
 			uniform.trans = sceneMatrix * trans;
-			memcpy((char*)(_uniform.getModelUniforms()[imageIndex].data) + i * _uniform.getModelUniforms()[i].buffer.getMinSize(), &uniform, sizeof(ModelUniform));
+			memcpy((char*)(_uniform.getModelUniforms()[imageIndex].data) + i * _uniform.getModelUniforms()[imageIndex].buffer.getMinSize(), &uniform, sizeof(ModelUniform));
 			i++;
 		}
 	}
@@ -58,12 +59,12 @@ void Renderer::drawFrame(const GameState& gameState)
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline.getPipeline());
 			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 0, { _uniform.getSceneUniforms()[imageIndex].descriptor }, { });
 			i = 0;
-			for (const auto& object : gameState.getObjects()) {
+			for (const auto& object : gameState.objects) {
 				vk::DeviceSize offset{};
 				commandBuffer.bindVertexBuffers(0, 1, &object.model.vertices.data, &offset);
 				commandBuffer.bindIndexBuffer(object.model.indices.data, 0, vk::IndexType::eUint16);
 				for (const auto& model : object.instances) {
-					commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 1, { _uniform.getModelUniforms()[imageIndex].descriptor }, { i*(unsigned)_uniform.getModelUniforms()[i].buffer.getMinSize() });
+					commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 1, { _uniform.getModelUniforms()[imageIndex].descriptor }, { i*(unsigned)_uniform.getModelUniforms()[imageIndex].buffer.getMinSize() });
 					commandBuffer.drawIndexed(object.model.indices.size, 1, 0, 0, 0);
 					i++;
 				}

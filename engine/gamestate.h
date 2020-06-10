@@ -6,6 +6,9 @@
 #include <bullet/btBulletDynamicsCommon.h>
 #include <memory>
 
+class Renderer;
+class VulkanContext;
+
 struct DynamicObjectState {
 	btDefaultMotionState* motion;
 	btRigidBody* rigidBody;
@@ -23,10 +26,14 @@ struct GameState
 {
 	std::vector<Object> objects;
 	glm::mat4 camera;
-	const std::vector<Object>& getObjects() const;
-	glm::mat4 getCamera() const;
+	float cameraX = 0;
+	float cameraY = 0;
+	glm::vec3 cameraPos{ 0.0f, -3.0f, 4.0f };
+
+	glm::mat4 getCameraMatrix() const;
 
 	void destroy(const VulkanContext& vkCtx);
+	void loadFromFile(Renderer& renderer, std::string fileName);
 };
 
 class Physics {
