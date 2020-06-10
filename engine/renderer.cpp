@@ -29,8 +29,15 @@ void Renderer::drawFrame(const GameState& gameState)
 	unsigned i = 0;
 	for (const auto& object : gameState.getObjects()) {
 		for (const auto& instance : object.instances) {
-			glm::mat4 matrix = sceneMatrix * glm::translate(glm::toMat4(instance.rotation), instance.position);
-			memcpy((char*)(_uniform.getModelUniforms()[imageIndex].data) + i * _uniform.getModelUniforms()[i].buffer.getMinSize(), &matrix, sizeof(glm::mat4));
+			btTransform transform;
+			instance.motion->getWorldTransform(transform);
+			glm::mat4 trans;
+			transform.getOpenGLMatrix((btScalar*)&trans);
+
+			ModelUniform uniform;
+			uniform.modelTrans = trans;
+			uniform.trans = sceneMatrix * trans;
+			memcpy((char*)(_uniform.getModelUniforms()[imageIndex].data) + i * _uniform.getModelUniforms()[i].buffer.getMinSize(), &uniform, sizeof(ModelUniform));
 			i++;
 		}
 	}

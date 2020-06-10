@@ -7,14 +7,15 @@
 #include <memory>
 
 struct DynamicObjectState {
-	glm::vec3 position;
-	glm::vec3 velocity;
-	glm::quat rotation;
-	glm::quat rotationalVelocity;
+	btDefaultMotionState* motion;
+	btRigidBody* rigidBody;
+	btVector3 inertia;
 };
 
 struct Object {
 	BakedModel model;
+	btScalar mass;
+	btCollisionShape* shape;
 	std::vector<DynamicObjectState> instances;
 };
 
@@ -36,7 +37,6 @@ class Physics {
 	std::unique_ptr<btDynamicsWorld> _dynamicsWorld;
 public:
 	Physics();
-	void addObject(DynamicObjectState &state) {
-
-	}
+	void addObject(DynamicObjectState& state);
+	void stepPhysics(float dt);
 };

@@ -27,6 +27,7 @@ struct SceneUniform {
 
 struct ModelUniform {
 	glm::mat4 trans;
+	glm::mat4 modelTrans;
 };
 
 class DefaultUniformLayout

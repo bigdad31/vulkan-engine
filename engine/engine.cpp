@@ -32,28 +32,53 @@ int main()
 	try {
 		SDL_Window* window = SDL_CreateWindow("Bruh", 500, 500, 800, 600, windowFlags);
 		SDL_SetWindowBordered(window, SDL_TRUE);
-		VulkanContext vkCtx(window);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
 
+		VulkanContext vkCtx(window);
 		GameState gameState;
+		Physics physics;
 
 		Model model = Model::loadFromFile("models/bruh.fbx");
 		Model floor = Model::loadFromFile("models/ground.fbx");
-		std::vector<Model> models = { model, floor};
+		std::vector<Model> models = { model, floor, model};
+		std::vector<btScalar> masses = { 1.0, 0.0, 1.0 };
+		std::vector<btCollisionShape*> shapes = { new btSphereShape(1.0), new btBoxShape(btVector3(btScalar(10.), btScalar(10.0), btScalar(0.5))), new btSphereShape(1.0) };
+		std::vector<btVector3> startVelocities = { {0, 0, 0.1}, {0, 0, 0}, {0, 1, 0} };
+		std::vector<btVector3> startPositions = { {0, 0, 0}, {0, 0, -3}, {0, 0, 2.5} };
 		std::vector<BakedModel> bakedModels(models.size());
+
 		Renderer renderer(vkCtx, window);
 		renderer.bakeModels(models, std::span<BakedModel>(bakedModels.data(), bakedModels.size()));
 
-		std::vector<std::vector<DynamicObjectState>> states = {
-			{{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::quat(glm::vec3()), glm::quat()}},
-			{{glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::quat(glm::vec3()), glm::quat()}}
-		};
 		gameState.objects.resize(bakedModels.size());
 		for (int i = 0; i < models.size(); i++) {
 			gameState.objects[i].model = bakedModels[i];
-			gameState.objects[i].instances = { states[i] };
+
+			btTransform transform;
+			transform.setIdentity();
+			transform.setOrigin(startPositions[i]);
+			bool isDynamic = masses[i] != 0;
+			btVector3 localInertia(0, 0, 0);
+			if (isDynamic)
+				shapes[i]->calculateLocalInertia(masses[i], localInertia);
+
+			btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(masses[i], motionState, shapes[i], localInertia);
+			btRigidBody* body = new btRigidBody(rbInfo);
+			body->setLinearVelocity(startVelocities[i]);
+			DynamicObjectState state;
+			state.inertia = localInertia;
+			state.motion = motionState;
+			state.rigidBody = body;
+
+			gameState.objects[i].instances = { state };
+			gameState.objects[i].mass = masses[i];
+			gameState.objects[i].shape = shapes[i];
+
+			physics.addObject(state);
 		}
-		gameState.camera = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		SDL_SetRelativeMouseMode(SDL_TRUE);
+
 		float cameraX = 0;
 		float cameraY = 0;
 		glm::vec3 cameraPos{0.0f, -3.0f, 0.0f};
@@ -63,7 +88,6 @@ int main()
 			while (running) {
 				std::chrono::duration<float> delta = std::chrono::high_resolution_clock::now() - last;
 				last = std::chrono::high_resolution_clock::now();
-				gameState.objects[0].instances[0].position += glm::vec3(0, 0, 0) * delta.count();
 				SDL_Event evt;
 				while (SDL_PollEvent(&evt)) {
 					if (evt.type == SDL_QUIT) {
@@ -96,10 +120,11 @@ int main()
 				}
 
 				glm::mat4 a = glm::rotate(glm::mat4(1.0f), cameraX, { 0.0f, 0.0f, 1.0f });
-				cameraPos += glm::vec3(a*glm::vec4(cameraChange * delta.count(), 0.0f));
 				glm::mat4 b = glm::rotate(a, cameraY, { 1.0f, 0.0f, 0.0f });
+				cameraPos += glm::vec3(b * glm::vec4(cameraChange * delta.count() * 2.0f, 0.0f));
 				glm::mat4 c = glm::translate(glm::mat4(1.0f), cameraPos);
 				gameState.camera = c*b;
+				physics.stepPhysics(delta.count());
 				renderer.drawFrame(gameState);
 			}
 		}
