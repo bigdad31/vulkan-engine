@@ -1,22 +1,18 @@
 ﻿#define WIN32_LEAN_AND_MEAN
-#include <vulkan/vulkan.hpp>
+
+#include "gamestate.h"
+#include "renderer.h"
+
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL_vulkan.h>
+
 #include <iostream>
-
-#include <optional>
-#include <vector>
-#include "model.h"
-#include "asynctransferhandler.h"
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
-
-#include "renderer.h"
 #include <chrono>
-#include "gamestate.h"
 
 #undef main
 
@@ -33,6 +29,7 @@ int main()
 		SDL_Window* window = SDL_CreateWindow("Bruh", 500, 500, 800, 600, windowFlags);
 		SDL_SetWindowBordered(window, SDL_TRUE);
 		SDL_SetRelativeMouseMode(SDL_TRUE);
+
 
 		VulkanContext vkCtx(window);
 		GameState gameState;
@@ -58,9 +55,23 @@ int main()
 					if (evt.type == SDL_QUIT) {
 						running = false;
 					}
+					if (evt.type == SDL_WINDOWEVENT) {
+						if (evt.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+							SDL_SetWindowGrab(window, SDL_TRUE);
+							SDL_SetRelativeMouseMode(SDL_TRUE);
+						}
+					}
+					if (evt.type == SDL_KEYDOWN) {
+						if (evt.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+							SDL_SetWindowGrab(window, SDL_FALSE);
+							SDL_SetRelativeMouseMode(SDL_FALSE);
+						}
+					}
 					if (evt.type == SDL_MOUSEMOTION) {
-						gameState.cameraX -= evt.motion.xrel * delta.count();
-						gameState.cameraY -= evt.motion.yrel * delta.count();
+						if (delta.count() < 0.001) {
+							gameState.cameraX -= evt.motion.xrel * delta.count();
+							gameState.cameraY -= evt.motion.yrel * delta.count();
+						}
 					}
 				}
 				const Uint8* keystate = SDL_GetKeyboardState(nullptr);
@@ -91,7 +102,7 @@ int main()
 		}
 		vkCtx.getDevice().waitIdle();
 	}
-	catch (std::exception &e) {
+	catch (std::exception& e) {
 		std::cout << e.what();
 	}
 	return 0;

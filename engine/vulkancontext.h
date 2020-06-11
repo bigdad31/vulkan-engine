@@ -1,6 +1,7 @@
 #pragma once
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
+
 #include <SDL2/SDL_video.h>
 
 #include <vulkan/vulkan.hpp>
@@ -8,6 +9,7 @@
 
 #include <optional>
 #include <vector>
+
 
 struct QueueFamilies {
 	std::optional<uint32_t> computeInd;
@@ -61,35 +63,16 @@ public:
 	vk::Instance getInstance() const;
 	vk::PhysicalDevice getPhysicalDevice() const;
 	vk::Device getDevice() const;
-	VmaAllocator getAllocator() const
-	{
-		return _allocator;
-	}
+	VmaAllocator getAllocator() const;
 	QueueFamilies getQueueFamilies() const;
 
-	vk::Queue getComputeQueue(int i) const {
-		return _computeQueues[i];
-	}
+	vk::Queue getComputeQueue(int i) const;
 
-	vk::Queue getGraphicsQueue(int i) const {
-		return _graphicsQueues[i];
-	}
+	vk::Queue getGraphicsQueue(int i) const;
 
-	vk::Queue getTransferQueue(int i) const {
-		return _transferQueues[i];
-	}
+	vk::Queue getTransferQueue(int i) const;
 
-	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const {
-		vk::PhysicalDeviceMemoryProperties memProperties = _physicalDevice.getMemoryProperties();
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-				return i;
-			}
-		}
-
-		throw std::runtime_error("failed to find suitable memory type!");
-	}
+	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
 
 	void destroySurface(vk::SurfaceKHR surface) const;
@@ -102,7 +85,7 @@ struct Buffer {
 	size_t size;
 
 	Buffer() = default;
-	Buffer(const VulkanContext &vkCtx, size_t size, vk::BufferUsageFlags usage, VmaMemoryUsage memory = VMA_MEMORY_USAGE_GPU_ONLY) {
+	Buffer(const VulkanContext& vkCtx, size_t size, vk::BufferUsageFlags usage, VmaMemoryUsage memory = VMA_MEMORY_USAGE_GPU_ONLY) {
 		this->size = size;
 		auto info = vk::BufferCreateInfo()
 			.setUsage(usage)
@@ -116,7 +99,7 @@ struct Buffer {
 	}
 
 	size_t getMinSize() {
-		return (minPadding > sizeof(T)?minPadding: sizeof(T));
+		return (minPadding > sizeof(T) ? minPadding : sizeof(T));
 	}
 
 	void destroy(const VulkanContext& vkCtx) {

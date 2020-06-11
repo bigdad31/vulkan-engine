@@ -1,5 +1,7 @@
 #pragma once
+
 #include "vulkancontext.h"
+
 
 class DepthStencil
 {
@@ -10,7 +12,7 @@ class DepthStencil
 	vk::ImageView _depthImageView;
 
 public:
-	DepthStencil(const VulkanContext& vkCtx, float width, float height);
+	DepthStencil(const VulkanContext& vkCtx, int width, int height);
 	~DepthStencil();
 
 	static vk::AttachmentDescription getDepthAttachment();

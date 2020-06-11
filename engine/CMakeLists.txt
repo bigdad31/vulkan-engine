@@ -18,37 +18,70 @@ include_directories(engine ${Vulkan_INCLUDE_DIRS})
 include_directories(engine PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
 
 set(KERNELS
-	shaders/default.frag
-	shaders/default.vert
+	"shaders/default.frag"
+	"shaders/default.vert"
 )
 
 set(MODELS
-	models/bruh.glb
+	"models/bruh.fbx"
+	"models/ground.fbx"
 )
 
 set(OUTPUT_MODELS
-	${CMAKE_CURRENT_SOURCE_DIR}/models/bruh.glb
+	"${CMAKE_CURRENT_BINARY_DIR}/models/bruh.fbx"
+	"${CMAKE_CURRENT_BINARY_DIR}/models/ground.fbx"
+)
+
+set(SCENES
+	"scenes/scene.json"
+)
+
+set(OUTPUT_SCENES
+	"${CMAKE_CURRENT_BINARY_DIR}/scenes/scene.json"
 )
 
 set(COMPILED_KERNELS
-	shaders/default.frag.spv
-	shaders/default.vert.spv
+	"shaders/default.frag.spv"
+	"shaders/default.vert.spv"
+)
+
+set(HEADERS
+	"asynctransferhandler.h"
+	"defaultuniform.h"
+	"depthstencil.h"
+	"gamestate.h"
+	"model.h"
+	"pipeline.h"
+	"renderer.h"
+	"shader.h"
+	"swapchain.h"
+	"vulkancontext.h"
+)
+
+set(IMPLEMENTATIONS
+	"asynctransferhandler.cpp"
+	"defaultuniform.cpp"  
+	"depthstencil.cpp"
+	"engine.cpp"
+	"gamestate.cpp" 
+	"model.cpp"
+	"pipeline.cpp"
+	"renderer.cpp"
+	"shader.cpp"
+	"swapchain.cpp"
+	"vulkancontext.cpp"
 )
 
 add_executable (engine 
-	"engine.cpp"
-	"vulkancontext.h"
-	"vulkancontext.cpp"
-	"swapchain.h"
-	"swapchain.cpp"
-	"pipeline.h"
-	"pipeline.cpp"
-	"shader.h"
-	"shader.cpp"
+	${HEADERS}
+	${IMPLEMENTATIONS}
 	${KERNELS}
 	${MODELS}
 	${OUTPUT_MODELS}
-	${COMPILED_KERNELS} "renderer.h" "renderer.cpp" "model.h" "model.cpp" "asynctransferhandler.h" "asynctransferhandler.cpp" "depthstencil.h" "depthstencil.cpp" "defaultuniform.h" "defaultuniform.cpp" "gamestate.h" "gamestate.cpp"  )
+	${SCENES}
+	${OUTPUT_SCENES}
+	${COMPILED_KERNELS}
+)
 
 foreach(KERNEL ${KERNELS})
 	add_custom_command(OUTPUT ${KERNEL}.spv
@@ -59,10 +92,15 @@ foreach(KERNEL ${KERNELS})
 endforeach()
 
 foreach(MODEL ${MODELS})
-	add_custom_command(OUTPUT ${MODEL}.glb
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${MODEL}
 	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL}" "${CMAKE_CURRENT_BINARY_DIR}/${MODEL}"
-	DEPENDS ${KERNEL})
-	message(STATUS "Generating build commands for ${KERNEL}.spv")
+	DEPENDS ${MODEL})
+endforeach()
+
+foreach(SCENE ${SCENES})
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${SCENE}
+	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${SCENE}" "${CMAKE_CURRENT_BINARY_DIR}/${SCENE}"
+	DEPENDS ${SCENE})
 endforeach()
 
 target_link_libraries(engine PRIVATE assimp::assimp)

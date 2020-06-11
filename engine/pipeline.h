@@ -1,9 +1,10 @@
 #pragma once
 
-#include "vulkancontext.h"
 #include "defaultuniform.h"
-#include "swapchain.h"
 #include "shader.h"
+#include "swapchain.h"
+#include "vulkancontext.h"
+
 
 class Pipeline
 {
@@ -14,30 +15,18 @@ class Pipeline
 	const vk::RenderPass _renderPass;
 	const std::vector<vk::Framebuffer> _framebuffers;
 
-	static Pipeline createPipeline(const VulkanContext &vkCtx, const Swapchain &swapchain, vk::ImageView depthView, DefaultUniformLayout &uniform);
+	static Pipeline createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout& uniform);
 public:
 	Pipeline(const VulkanContext& vkCtx, vk::Rect2D _scissors, vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass, std::vector<vk::Framebuffer> framebuffers);
-	Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout &uniform);
+	Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout& uniform);
 	Pipeline(Pipeline&) = delete;
 	~Pipeline();
 
-	const std::vector<vk::Framebuffer>& getFramebuffers() const {
-		return _framebuffers;
-	}
+	const std::vector<vk::Framebuffer>& getFramebuffers() const;
+	vk::Rect2D getScissors() const;
 
-	vk::Rect2D getScissors() const {
-		return _scissors;
-	}
+	vk::Pipeline getPipeline() const;
 
-	vk::Pipeline getPipeline() const {
-		return _pipeline;
-	}
-	
-	vk::RenderPass getRenderPass() const {
-		return _renderPass;
-	}
-
-	vk::PipelineLayout getLayout() const {
-		return _pipelineLayout;
-	}
+	vk::RenderPass getRenderPass() const;
+	vk::PipelineLayout getLayout() const;
 };

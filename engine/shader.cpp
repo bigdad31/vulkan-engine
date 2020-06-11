@@ -1,4 +1,5 @@
 #include "shader.h"
+
 #include <fstream>
 
 Shader Shader::loadShaderFromFile(const VulkanContext& vkCtx, std::string path)
@@ -18,7 +19,7 @@ Shader Shader::loadShaderFromFile(const VulkanContext& vkCtx, std::string path)
 	auto shaderInfo = vk::ShaderModuleCreateInfo()
 		.setCodeSize(buffer.size())
 		.setPCode(reinterpret_cast<const uint32_t*>(buffer.data()));
-	
+
 	vk::ShaderModule shader = vkCtx.getDevice().createShaderModule(shaderInfo);
 
 	return Shader(vkCtx, shader);

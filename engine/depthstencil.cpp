@@ -1,6 +1,6 @@
 #include "depthstencil.h"
 
-DepthStencil::DepthStencil(const VulkanContext& vkCtx, float width, float height) : _vkCtx(vkCtx) {
+DepthStencil::DepthStencil(const VulkanContext& vkCtx, int width, int height) : _vkCtx(vkCtx) {
 	auto info = vk::ImageCreateInfo()
 		.setArrayLayers(1)
 		.setExtent(vk::Extent3D(width, height, 1))

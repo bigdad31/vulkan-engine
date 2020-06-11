@@ -133,7 +133,22 @@ vk::SurfaceFormatKHR Swapchain::getFormat() const
 	return _format;
 }
 
+vk::SwapchainKHR Swapchain::getSwapchain() const
+{
+	return _swapchain;
+}
+
 const std::vector<vk::ImageView>& Swapchain::getImageViews() const
 {
 	return _imageViews;
+}
+
+uint32_t Swapchain::getImageCount() const
+{
+	return _images.size();
+}
+
+uint32_t Swapchain::acquireNextImage(vk::Semaphore imageAvailible) const
+{
+	return _vkCtx.getDevice().acquireNextImageKHR(_swapchain, UINT64_MAX, imageAvailible, vk::Fence()).value;
 }

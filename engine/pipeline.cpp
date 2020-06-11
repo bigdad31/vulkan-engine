@@ -1,10 +1,11 @@
 #include "pipeline.h"
 
-#include <algorithm>
-#include "model.h"
 #include "depthstencil.h"
+#include "model.h"
 
-Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout &uniform)
+#include <algorithm>
+
+Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout& uniform)
 {
 	Shader vertShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.vert.spv");
 	Shader fragShader = Shader::loadShaderFromFile(vkCtx, "shaders/default.frag.spv");
@@ -25,11 +26,11 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 	auto vertexInputAttributes = Vertex::getAttributeDescriptions();
 
 	auto vertexState = vk::PipelineVertexInputStateCreateInfo()
-		.setVertexAttributeDescriptionCount(vertexInputAttributes.size())
+		.setVertexAttributeDescriptionCount((uint32_t)vertexInputAttributes.size())
 		.setPVertexAttributeDescriptions(vertexInputAttributes.data())
 		.setVertexBindingDescriptionCount(1)
 		.setPVertexBindingDescriptions(&vertexInputBinding);
-	
+
 	auto vertexAssembly = vk::PipelineInputAssemblyStateCreateInfo()
 		.setPrimitiveRestartEnable(false)
 		.setTopology(vk::PrimitiveTopology::eTriangleList);
@@ -50,7 +51,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setPolygonMode(vk::PolygonMode::eFill)
 		.setLineWidth(1)
 		.setDepthBiasEnable(false);
-	
+
 	auto multiSampling = vk::PipelineMultisampleStateCreateInfo()
 		.setSampleShadingEnable(false)
 		.setRasterizationSamples(vk::SampleCountFlagBits::e1)
@@ -78,7 +79,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 	std::vector<vk::DescriptorSetLayout> layouts({ uniform.getSceneLayout(), uniform.getModelLayout() });
 
 	auto pipelineInfo = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount(layouts.size())
+		.setSetLayoutCount((uint32_t)layouts.size())
 		.setPSetLayouts(layouts.data());
 
 	vk::PipelineLayout pipelineLayout = vkCtx.getDevice().createPipelineLayout(pipelineInfo);
@@ -112,7 +113,7 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 		.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 		.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-	vk::AttachmentDescription attachments[] = {colorAttachment, depthAttachment};
+	vk::AttachmentDescription attachments[] = { colorAttachment, depthAttachment };
 	auto renderPassInfo = vk::RenderPassCreateInfo()
 		.setAttachmentCount(2)
 		.setPAttachments(attachments)
@@ -137,9 +138,9 @@ Pipeline Pipeline::createPipeline(const VulkanContext& vkCtx, const Swapchain& s
 		.setSubpass(0);
 	vk::Pipeline pipeline = vkCtx.getDevice().createGraphicsPipeline(vk::PipelineCache(), graphicsPipelineInfo);
 
-	std::vector<vk::Framebuffer> framebuffers (swapchain.getImageViews().size());
+	std::vector<vk::Framebuffer> framebuffers(swapchain.getImageCount());
 
-	std::transform(swapchain.getImageViews().begin(), swapchain.getImageViews().end(), framebuffers.begin(), [&](const vk::ImageView &imageView) {
+	std::transform(swapchain.getImageViews().begin(), swapchain.getImageViews().end(), framebuffers.begin(), [&](const vk::ImageView& imageView) {
 		vk::ImageView attachments[] = { imageView, depthView };
 		auto frameBufferInfo = vk::FramebufferCreateInfo()
 			.setAttachmentCount(2)
@@ -164,7 +165,7 @@ Pipeline::Pipeline(const VulkanContext& vkCtx, vk::Rect2D scissors, vk::Pipeline
 {
 }
 
-Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout &uniform)
+Pipeline::Pipeline(const VulkanContext& vkCtx, const Swapchain& swapchain, vk::ImageView depthView, DefaultUniformLayout& uniform)
 	: Pipeline(createPipeline(vkCtx, swapchain, depthView, uniform))
 {
 }
@@ -177,4 +178,29 @@ Pipeline::~Pipeline()
 	_vkCtx.deviceDestroy(_pipeline);
 	_vkCtx.deviceDestroy(_pipelineLayout);
 	_vkCtx.deviceDestroy(_renderPass);
+}
+
+const std::vector<vk::Framebuffer>& Pipeline::getFramebuffers() const
+{
+	return _framebuffers;
+}
+
+vk::Rect2D Pipeline::getScissors() const
+{
+	return _scissors;
+}
+
+vk::Pipeline Pipeline::getPipeline() const
+{
+	return _pipeline;
+}
+
+vk::RenderPass Pipeline::getRenderPass() const
+{
+	return _renderPass;
+}
+
+vk::PipelineLayout Pipeline::getLayout() const
+{
+	return _pipelineLayout;
 }

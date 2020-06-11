@@ -91,6 +91,16 @@ vk::DescriptorSetLayout DefaultUniformLayout::getModelLayout()
 	return _modelLayout;
 }
 
+size_t DefaultUniformLayout::getSceneUniformSize() const
+{
+	return size_t();
+}
+
+size_t DefaultUniformLayout::getModelUniformSize() const
+{
+	return Uniform<ModelUniform, 256>::getMinPadding();
+}
+
 std::vector<Uniform<SceneUniform>>& DefaultUniformLayout::getSceneUniforms()
 {
 	return _sceneUniforms;

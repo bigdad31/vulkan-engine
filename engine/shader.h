@@ -2,6 +2,7 @@
 
 #include "vulkancontext.h"
 
+
 class Shader
 {
 	const VulkanContext& _vkCtx;
