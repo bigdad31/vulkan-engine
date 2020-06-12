@@ -7,8 +7,9 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include <vector>
+#include <chrono>
 #include <memory>
+#include <vector>
 
 
 class Renderer;
@@ -27,10 +28,27 @@ struct Object {
 	std::vector<DynamicObjectState> instances;
 };
 
+struct DynamicGraphicsInstanceState {
+	glm::mat4 globalTransform;
+	glm::vec3 velocity;
+	glm::vec3 rotVelocity;
+};
+
+struct GraphicsObjectState {
+	BakedModel model;
+	std::vector<DynamicGraphicsInstanceState> instances;
+};
+
+struct GraphicsGameState {
+	std::vector<GraphicsObjectState> objects;
+	glm::mat4 sceneMatrix;
+	std::chrono::high_resolution_clock::time_point timeStamp;
+};
+
+
 struct GameState
 {
 	std::vector<Object> objects;
-	glm::mat4 camera;
 	float cameraX = 0;
 	float cameraY = 0;
 	glm::vec3 cameraPos{ 0.0f, -3.0f, 4.0f };
@@ -39,6 +57,8 @@ struct GameState
 
 	void destroy(const VulkanContext& vkCtx);
 	void loadFromFile(Renderer& renderer, std::string fileName);
+	void initGraphicsGameState(GraphicsGameState& gameState);
+	void updateGraphicsGameState(GraphicsGameState& gameState);
 };
 
 class Physics {

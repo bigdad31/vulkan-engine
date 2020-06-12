@@ -6,7 +6,9 @@
 #include "model.h"
 #include "pipeline.h"
 
-struct GameState;
+#include <mutex>
+
+struct GraphicsGameState;
 
 constexpr int maxFramesInFlight = 2;
 
@@ -34,6 +36,6 @@ public:
 	void bakeModels(const std::vector<Model>& models, std::vector<BakedModel>& bakedModels);
 
 	Renderer(const Renderer&) = delete;
-	void drawFrame(const GameState& gameState);
+	void drawFrame(GraphicsGameState& gameState, std::mutex& mutex);
 	~Renderer();
 };

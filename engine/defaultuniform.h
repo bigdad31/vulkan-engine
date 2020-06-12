@@ -4,7 +4,6 @@
 
 #include <glm/glm.hpp>
 
-
 template<class T, size_t minPadding = 0>
 struct Uniform {
 	Buffer<T, minPadding> buffer;

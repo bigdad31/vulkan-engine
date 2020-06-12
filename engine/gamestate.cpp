@@ -4,6 +4,8 @@
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <rapidjson/document.h>
 
@@ -76,9 +78,9 @@ void GameState::loadFromFile(Renderer& renderer, std::string fileName)
 		const auto& jsonPos = instance["pos"].GetArray();
 		btVector3 pos = { jsonPos[0].GetFloat(), jsonPos[1].GetFloat(), jsonPos[2].GetFloat() };
 
-		btTransform transform;
-		transform.setIdentity();
-		transform.setOrigin(pos);
+		btTransform globalTransform;
+		globalTransform.setIdentity();
+		globalTransform.setOrigin(pos);
 
 		btVector3 localInertia(0, 0, 0);
 
@@ -86,7 +88,7 @@ void GameState::loadFromFile(Renderer& renderer, std::string fileName)
 			object.shape->calculateLocalInertia(object.mass, localInertia);
 		}
 
-		btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+		btDefaultMotionState* motionState = new btDefaultMotionState(globalTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(object.mass, motionState, object.shape, localInertia);
 		btRigidBody* body = new btRigidBody(rbInfo);
 
@@ -109,6 +111,43 @@ void GameState::loadFromFile(Renderer& renderer, std::string fileName)
 	cameraPos = { jsonCamPos[0].GetFloat(), jsonCamPos[1].GetFloat(), jsonCamPos[2].GetFloat() };
 }
 
+void GameState::initGraphicsGameState(GraphicsGameState& gameState)
+{
+	gameState.objects.resize(objects.size());
+	for (int i = 0; i < objects.size(); i++) {
+		gameState.objects[i].instances.resize(objects[i].instances.size());
+	}
+}
+
+void GameState::updateGraphicsGameState(GraphicsGameState& gameState)
+{
+	glm::mat4 coordTransform = {
+		{1,  0,  0, 0},
+		{0,  0, -1, 0},
+		{0, -1,  0, 0},
+		{0,  0,  0, 1}
+	};
+	glm::mat4 sceneMatrix = glm::perspective(glm::radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f) * coordTransform * glm::inverse(getCameraMatrix());
+	gameState.sceneMatrix = sceneMatrix;
+	for (int i = 0; i < gameState.objects.size(); i++) {
+		gameState.objects[i].model = objects[i].model;
+		for (int k = 0; k < gameState.objects[i].instances.size(); k++) {
+			btVector3 vel = objects[i].instances[k].rigidBody->getLinearVelocity();
+			btVector3 rot = objects[i].instances[k].rigidBody->getAngularVelocity();
+			gameState.objects[i].instances[k].velocity = { vel.x(), vel.y(), vel.z() };
+			gameState.objects[i].instances[k].rotVelocity = { rot.x(), rot.y(), rot.z() };
+
+			btTransform globalTransform;
+			objects[i].instances[k].motion->getWorldTransform(globalTransform);
+			glm::mat4 trans;
+			globalTransform.getOpenGLMatrix((btScalar*)&trans);
+
+			gameState.objects[i].instances[k].globalTransform = trans;
+		}
+	}
+	gameState.timeStamp = std::chrono::high_resolution_clock::now();
+}
+
 Physics::Physics() :
 	_configurator(std::make_unique<btDefaultCollisionConfiguration>()),
 	_dispatcher(std::make_unique<btCollisionDispatcher>(_configurator.get())),
@@ -126,5 +165,5 @@ void Physics::addObject(DynamicObjectState& state)
 
 void Physics::stepPhysics(float dt)
 {
-	_dynamicsWorld->stepSimulation(dt);
+	_dynamicsWorld->stepSimulation(dt, 50);
 }
